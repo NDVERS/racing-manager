@@ -224,9 +224,9 @@ class GarageController extends Controller
         $purchasePrice = (int) ($car->purchase_price ?? 30000);
 
         // Validation 2: Saldo mencukupi
-        if ($team->credits < $purchasePrice) {
+        if ($team->money < $purchasePrice) {
             return redirect()->route('garage.dealership')
-                ->with('error', 'Insufficient credits in team treasury to acquire '.$car->name.'. Required: '.number_format($purchasePrice).' CR, Available: '.number_format($team->credits).' CR.');
+                ->with('error', 'Insufficient credits in team treasury to acquire '.$car->name.'. Required: '.number_format($purchasePrice).' CR, Available: '.number_format($team->money).' CR.');
         }
 
         // Validation 3: Cegah duplikasi sasis yang sudah dimiliki
@@ -246,7 +246,7 @@ class GarageController extends Controller
                 'team_id' => $team->id,
                 'type' => 'expense',
                 'amount' => -$purchasePrice,
-                'balance_after' => $team->credits,
+                'balance_after' => $team->money,
                 'description' => "Chassis Acquisition: {$car->name}",
                 'reference_id' => $car->id,
                 'reference_type' => Car::class,

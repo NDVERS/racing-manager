@@ -81,6 +81,7 @@ class TeamOnboardingController extends Controller
             if ($kuroGt) {
                 $userCar = $kuroGt->replicate();
                 $userCar->team_id = $newTeam->id;
+                $userCar->slot = 1;
                 $userCar->is_active = true;
                 $userCar->save();
             } else {
@@ -94,6 +95,7 @@ class TeamOnboardingController extends Controller
                     'reliability' => 75,
                     'level' => 1,
                     'purchase_price' => 25000,
+                    'slot' => 1,
                     'is_active' => true,
                 ]);
             }
@@ -106,6 +108,7 @@ class TeamOnboardingController extends Controller
             if ($alexCarter) {
                 $alexCarter->update([
                     'team_id' => $newTeam->id,
+                    'slot' => 1,
                     'is_lead' => true,
                 ]);
             } else {
@@ -120,6 +123,7 @@ class TeamOnboardingController extends Controller
                     'racecraft' => 66,
                     'experience' => 40,
                     'salary' => 1200,
+                    'slot' => 1,
                     'is_lead' => true,
                 ]);
             }

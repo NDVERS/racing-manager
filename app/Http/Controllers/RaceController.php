@@ -239,11 +239,15 @@ class RaceController extends Controller
         $validCompounds = ['soft', 'medium', 'hard', 'wet'];
         $validModes = ['push', 'balanced', 'conserve'];
 
-        $tireCompound1 = in_array($request->input('tire_compound'), $validCompounds, true) ? $request->input('tire_compound') : 'medium';
-        $drivingMode1 = in_array($request->input('driving_mode'), $validModes, true) ? $request->input('driving_mode') : 'balanced';
+        $rawCompound1 = strtolower((string) $request->input('tire_compound'));
+        $rawMode1 = strtolower((string) $request->input('driving_mode'));
+        $tireCompound1 = in_array($rawCompound1, $validCompounds, true) ? $rawCompound1 : 'medium';
+        $drivingMode1 = in_array($rawMode1, $validModes, true) ? $rawMode1 : 'balanced';
 
-        $tireCompound2 = in_array($request->input('tire_compound_2'), $validCompounds, true) ? $request->input('tire_compound_2') : 'medium';
-        $drivingMode2 = in_array($request->input('driving_mode_2'), $validModes, true) ? $request->input('driving_mode_2') : 'balanced';
+        $rawCompound2 = strtolower((string) $request->input('tire_compound_2'));
+        $rawMode2 = strtolower((string) $request->input('driving_mode_2'));
+        $tireCompound2 = in_array($rawCompound2, $validCompounds, true) ? $rawCompound2 : 'medium';
+        $drivingMode2 = in_array($rawMode2, $validModes, true) ? $rawMode2 : 'balanced';
 
         $simulationData = DB::transaction(function () use (
             $race,
