@@ -29,19 +29,55 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-3.5 py-2 text-center font-mono">
-                    <div class="text-[10px] text-zinc-500 uppercase">Track Surface</div>
-                    <div class="text-xs font-bold text-white uppercase">{{ $race->weather === 'wet' ? '🌧️ Wet Rain' : '☀️ Dry Asphalt' }}</div>
+                @php
+                    $pCompound = $simulation['tactics']['tire_compound'] ?? ($simulation['tire_compound'] ?? 'medium');
+                    $pMode = $simulation['tactics']['driving_mode'] ?? ($simulation['driving_mode'] ?? 'balanced');
+                @endphp
+
+                <!-- Active Compound Badge -->
+                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-3 py-2 text-center font-mono">
+                    <div class="text-[9px] text-zinc-500 uppercase">Tire Strategy</div>
+                    <div class="text-xs font-black uppercase flex items-center justify-center gap-1.5 mt-0.5">
+                        @if($pCompound === 'soft')
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow-sm shadow-red-500/50"></span>
+                            <span class="text-red-400">SOFT (C3)</span>
+                        @elseif($pCompound === 'hard')
+                            <span class="w-2.5 h-2.5 rounded-full bg-zinc-200 inline-block shadow-sm shadow-zinc-200/50"></span>
+                            <span class="text-zinc-200">HARD (C1)</span>
+                        @elseif($pCompound === 'wet')
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow-sm shadow-blue-500/50"></span>
+                            <span class="text-blue-400">WET RAIN</span>
+                        @else
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block shadow-sm shadow-amber-400/50"></span>
+                            <span class="text-amber-400">MEDIUM (C2)</span>
+                        @endif
+                    </div>
                 </div>
 
-                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-3.5 py-2 text-center font-mono">
-                    <div class="text-[10px] text-zinc-500 uppercase">Prize Pool</div>
-                    <div class="text-xs font-bold text-amber-400">{{ number_format($race->prize_pool) }} CR</div>
+                <!-- Active Driving Mode Badge -->
+                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-3 py-2 text-center font-mono">
+                    <div class="text-[9px] text-zinc-500 uppercase">ECU Mapping</div>
+                    <div class="text-xs font-black uppercase flex items-center justify-center gap-1.5 mt-0.5">
+                        @if($pMode === 'push')
+                            <span class="text-red-400">⚡ PUSH MODE</span>
+                        @elseif($pMode === 'conserve')
+                            <span class="text-emerald-400">🛡️ CONSERVE</span>
+                        @else
+                            <span class="text-zinc-300">⚙️ BALANCED</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-3 py-2 text-center font-mono">
+                    <div class="text-[9px] text-zinc-500 uppercase">Track Surface</div>
+                    <div class="text-xs font-bold text-white uppercase">{{ $race->weather === 'wet' ? '🌧️ Wet Rain' : '☀️ Dry Asphalt' }}</div>
                 </div>
 
                 <form method="POST" action="{{ route('races.run', $race) }}" class="inline">
                     @csrf
-                    <button type="submit" class="px-4 py-2.5 rounded bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 text-xs font-mono font-bold uppercase transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                    <input type="hidden" name="tire_compound" value="{{ $pCompound }}">
+                    <input type="hidden" name="driving_mode" value="{{ $pMode }}">
+                    <button type="submit" class="px-3.5 py-2.5 rounded bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 text-xs font-mono font-bold uppercase transition flex items-center gap-1.5 shadow-sm cursor-pointer">
                         <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         <span>Re-simulate</span>
                     </button>
@@ -122,7 +158,7 @@
                             <tr>
                                 <th class="py-2.5 px-3">Pos</th>
                                 <th class="py-2.5 px-3">Driver / Constructor</th>
-                                <th class="py-2.5 px-3">Chassis</th>
+                                <th class="py-2.5 px-3">Strategy</th>
                                 <th class="py-2.5 px-3 text-right">Total Time</th>
                                 <th class="py-2.5 px-3 text-right">Interval</th>
                                 <th class="py-2.5 px-3 text-right">Best Lap</th>
@@ -134,13 +170,13 @@
                                     <!-- Position -->
                                     <td class="py-3 px-3">
                                         @if($driver['position'] === 1)
-                                            <span class="w-6 h-6 rounded bg-amber-400 text-black font-black text-xs flex items-center justify-center shadow-sm">1</span>
+                                             <span class="w-6 h-6 rounded bg-amber-400 text-black font-black text-xs flex items-center justify-center shadow-sm">1</span>
                                         @elseif($driver['position'] === 2)
-                                            <span class="w-6 h-6 rounded bg-zinc-300 text-black font-black text-xs flex items-center justify-center">2</span>
+                                             <span class="w-6 h-6 rounded bg-zinc-300 text-black font-black text-xs flex items-center justify-center">2</span>
                                         @elseif($driver['position'] === 3)
-                                            <span class="w-6 h-6 rounded bg-amber-700 text-white font-black text-xs flex items-center justify-center">3</span>
+                                             <span class="w-6 h-6 rounded bg-amber-700 text-white font-black text-xs flex items-center justify-center">3</span>
                                         @else
-                                            <span class="text-zinc-400 font-bold pl-1.5">{{ $driver['position'] }}</span>
+                                             <span class="text-zinc-400 font-bold pl-1.5">{{ $driver['position'] }}</span>
                                         @endif
                                     </td>
 
@@ -154,14 +190,38 @@
                                                         <span class="text-[9px] bg-orange-600 text-white px-1.5 py-0.2 rounded font-black tracking-tighter">YOU</span>
                                                     @endif
                                                 </div>
-                                                <div class="text-[10px] text-zinc-400 uppercase font-normal">{{ $driver['team_name'] }}</div>
+                                                <div class="text-[10px] text-zinc-400 uppercase font-normal">{{ $driver['team_name'] }} &bull; {{ $driver['car_name'] }}</div>
                                             </div>
                                         </div>
                                     </td>
 
-                                    <!-- Chassis -->
-                                    <td class="py-3 px-3 text-zinc-400 text-[11px]">
-                                        {{ $driver['car_name'] }}
+                                    <!-- Strategy (Tire & Mode) -->
+                                    <td class="py-3 px-3">
+                                        <div class="flex items-center gap-1.5">
+                                            @php
+                                                $dCompound = $driver['tire_compound'] ?? 'medium';
+                                                $dMode = $driver['driving_mode'] ?? 'balanced';
+                                            @endphp
+                                            <!-- Compound Pill -->
+                                            @if($dCompound === 'soft')
+                                                <span class="px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800/80 text-[9px] font-black" title="Soft Compound">S</span>
+                                            @elseif($dCompound === 'hard')
+                                                <span class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-600 text-[9px] font-black" title="Hard Compound">H</span>
+                                            @elseif($dCompound === 'wet')
+                                                <span class="px-1.5 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-700 text-[9px] font-black" title="Wet Rain Compound">W</span>
+                                            @else
+                                                <span class="px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800/80 text-[9px] font-black" title="Medium Compound">M</span>
+                                            @endif
+
+                                            <!-- Mode Pill -->
+                                            @if($dMode === 'push')
+                                                <span class="text-[9px] text-red-400 font-bold">PUSH</span>
+                                            @elseif($dMode === 'conserve')
+                                                <span class="text-[9px] text-emerald-400 font-bold">ECO</span>
+                                            @else
+                                                <span class="text-[9px] text-zinc-400">STD</span>
+                                            @endif
+                                        </div>
                                     </td>
 
                                     <!-- Total Time -->
@@ -218,7 +278,7 @@
 
                 <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
                     @foreach($simulation['lap_events'] as $event)
-                        <div class="p-3 rounded border text-xs font-mono {{ $event['type'] === 'overtake' ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : ($event['type'] === 'defense_loss' ? 'bg-amber-950/40 border-amber-500/40 text-amber-200' : ($event['type'] === 'telemetry_alert' ? 'bg-red-950/40 border-red-500/40 text-red-200' : ($event['type'] === 'finish' ? 'bg-purple-950/40 border-purple-500/40 text-purple-200' : 'bg-zinc-950/60 border-zinc-800 text-zinc-300'))) }}">
+                        <div class="p-3 rounded border text-xs font-mono {{ $event['type'] === 'overtake' ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : ($event['type'] === 'defense_loss' ? 'bg-amber-950/40 border-amber-500/40 text-amber-200' : ($event['type'] === 'telemetry_alert' ? 'bg-red-950/40 border-red-500/40 text-red-200' : ($event['type'] === 'pit_radio' ? 'bg-blue-950/40 border-blue-500/40 text-blue-200' : ($event['type'] === 'finish' ? 'bg-purple-950/40 border-purple-500/40 text-purple-200' : 'bg-zinc-950/60 border-zinc-800 text-zinc-300')))) }}">
                             <div class="flex items-center justify-between text-[10px] font-bold uppercase mb-1 opacity-80">
                                 <span>LAP {{ $event['lap'] }}</span>
                                 <span class="tracking-wider">{{ strtoupper(str_replace('_', ' ', $event['type'])) }}</span>

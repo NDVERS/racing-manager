@@ -153,6 +153,205 @@
                         @endif
                     </div>
                 </div>
+            <!-- Pit-Wall Tactical Strategy Selector Deck -->
+            <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-lg">
+                <div class="flex items-center justify-between pb-4 mb-5 border-b border-zinc-800">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded bg-cyan-500 animate-pulse"></span>
+                        <h2 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Pit-Wall Strategy Selector</h2>
+                    </div>
+                    <span class="text-xs font-mono text-zinc-400">Pre-Race Tactical Calibration</span>
+                </div>
+
+                <!-- Strategy Form (wraps inputs and triggers execution) -->
+                <form id="race-sim-form" method="POST" action="{{ route('races.run', $race) }}" class="space-y-6">
+                    @csrf
+
+                    <!-- 1. Tire Compound Selection -->
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-xs font-mono font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                <span>1. Tire Compound Allocation</span>
+                            </label>
+                            @if($race->weather === 'wet')
+                                <span class="text-[10px] font-mono font-black uppercase text-cyan-400 bg-cyan-950/80 border border-cyan-700/60 px-2 py-0.5 rounded animate-pulse">
+                                    🌧️ Wet Weather: Wet compound strongly recommended
+                                </span>
+                            @else
+                                <span class="text-[10px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
+                                    ☀️ Dry Surface: Slicks optimal
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <!-- Soft Compound -->
+                            <label class="relative flex flex-col justify-between p-3.5 rounded bg-zinc-950/90 border-2 border-zinc-800 hover:border-red-500/80 cursor-pointer transition-all has-[:checked]:border-red-500 has-[:checked]:bg-red-950/20 group">
+                                <input type="radio" name="tire_compound" value="soft" class="sr-only" {{ ($race->weather !== 'wet') ? '' : '' }}>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-3 h-3 rounded-full bg-red-500 inline-block shrink-0 shadow-sm shadow-red-500/50"></span>
+                                            <span class="font-mono font-black text-sm uppercase text-white group-hover:text-red-400">SOFT (C3)</span>
+                                        </div>
+                                        <span class="text-[9px] font-mono font-bold text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800/60">-0.85s PACE</span>
+                                    </div>
+                                    <p class="text-[10px] font-mono text-zinc-400 leading-snug">
+                                        Peak launch grip & early sector pace. Rapid tire wear cliff after 35% distance.
+                                    </p>
+                                </div>
+                                <div class="mt-2.5 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[9px] font-mono text-zinc-500">
+                                    <span>Grip: <strong class="text-red-400">Maximum</strong></span>
+                                    <span>Deg: <strong class="text-orange-400">High</strong></span>
+                                </div>
+                            </label>
+
+                            <!-- Medium Compound -->
+                            <label class="relative flex flex-col justify-between p-3.5 rounded bg-zinc-950/90 border-2 border-zinc-800 hover:border-amber-500/80 cursor-pointer transition-all has-[:checked]:border-amber-500 has-[:checked]:bg-amber-950/20 group">
+                                <input type="radio" name="tire_compound" value="medium" class="sr-only" {{ ($race->weather !== 'wet') ? 'checked' : '' }}>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-3 h-3 rounded-full bg-amber-400 inline-block shrink-0 shadow-sm shadow-amber-400/50"></span>
+                                            <span class="font-mono font-black text-sm uppercase text-white group-hover:text-amber-400">MEDIUM (C2)</span>
+                                        </div>
+                                        <span class="text-[9px] font-mono font-bold text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800/60">BALANCED</span>
+                                    </div>
+                                    <p class="text-[10px] font-mono text-zinc-400 leading-snug">
+                                        Optimal baseline balance between raw speed and controlled degradation.
+                                    </p>
+                                </div>
+                                <div class="mt-2.5 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[9px] font-mono text-zinc-500">
+                                    <span>Grip: <strong class="text-amber-400">Optimal</strong></span>
+                                    <span>Deg: <strong class="text-zinc-400">Moderate</strong></span>
+                                </div>
+                            </label>
+
+                            <!-- Hard Compound -->
+                            <label class="relative flex flex-col justify-between p-3.5 rounded bg-zinc-950/90 border-2 border-zinc-800 hover:border-zinc-400/80 cursor-pointer transition-all has-[:checked]:border-zinc-300 has-[:checked]:bg-zinc-800/30 group">
+                                <input type="radio" name="tire_compound" value="hard" class="sr-only">
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-3 h-3 rounded-full bg-zinc-200 inline-block shrink-0 shadow-sm shadow-zinc-200/50"></span>
+                                            <span class="font-mono font-black text-sm uppercase text-white group-hover:text-zinc-200">HARD (C1)</span>
+                                        </div>
+                                        <span class="text-[9px] font-mono font-bold text-zinc-300 bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-700">+0.50s PACE</span>
+                                    </div>
+                                    <p class="text-[10px] font-mono text-zinc-400 leading-snug">
+                                        Endurance compound with near-zero degradation. Superior late-race consistency.
+                                    </p>
+                                </div>
+                                <div class="mt-2.5 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[9px] font-mono text-zinc-500">
+                                    <span>Grip: <strong class="text-zinc-400">Durable</strong></span>
+                                    <span>Deg: <strong class="text-emerald-400">Minimal</strong></span>
+                                </div>
+                            </label>
+
+                            <!-- Wet Compound -->
+                            <label class="relative flex flex-col justify-between p-3.5 rounded bg-zinc-950/90 border-2 border-zinc-800 hover:border-blue-500/80 cursor-pointer transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-950/20 group">
+                                <input type="radio" name="tire_compound" value="wet" class="sr-only" {{ ($race->weather === 'wet') ? 'checked' : '' }}>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-3 h-3 rounded-full bg-blue-500 inline-block shrink-0 shadow-sm shadow-blue-500/50"></span>
+                                            <span class="font-mono font-black text-sm uppercase text-white group-hover:text-blue-400">WET RAIN</span>
+                                        </div>
+                                        <span class="text-[9px] font-mono font-bold {{ $race->weather === 'wet' ? 'text-cyan-400 bg-cyan-950/80 border border-cyan-800/60' : 'text-red-400 bg-red-950/80 border border-red-800/60' }}">
+                                            {{ $race->weather === 'wet' ? '🌧️ RAIN GRIP' : '+4.5s ON DRY' }}
+                                        </span>
+                                    </div>
+                                    <p class="text-[10px] font-mono text-zinc-400 leading-snug">
+                                        Deep water evacuation tread. Mandatory in rain; severe overheating penalty on dry tarmac.
+                                    </p>
+                                </div>
+                                <div class="mt-2.5 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[9px] font-mono text-zinc-500">
+                                    <span>Water: <strong class="text-blue-400">100% Grip</strong></span>
+                                    <span>Dry: <strong class="text-red-400">Degrade</strong></span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 2. Driving / Engine Mode Selection -->
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-xs font-mono font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                                <span>2. Engine Telemetry & Driving Mode</span>
+                            </label>
+                            <span class="text-[10px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
+                                Engine ECU Mapping
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <!-- Push (Aggressive) -->
+                            <label class="relative flex flex-col justify-between p-3.5 rounded bg-zinc-950/90 border-2 border-zinc-800 hover:border-red-500/80 cursor-pointer transition-all has-[:checked]:border-red-500 has-[:checked]:bg-red-950/20 group">
+                                <input type="radio" name="driving_mode" value="push" class="sr-only">
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-xs">⚡</span>
+                                            <span class="font-mono font-black text-sm uppercase text-white group-hover:text-red-400">PUSH (AGGRESSIVE)</span>
+                                        </div>
+                                        <span class="text-[9px] font-mono font-bold text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800/60">-0.45s PACE</span>
+                                    </div>
+                                    <p class="text-[10px] font-mono text-zinc-400 leading-snug">
+                                        Maximum power & aggressive overtake line. Accelerates tire wear (+35%) and elevates lock-up risk.
+                                    </p>
+                                </div>
+                                <div class="mt-2.5 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[9px] font-mono text-zinc-500">
+                                    <span>Attack: <strong class="text-red-400">+Overtake</strong></span>
+                                    <span>Reliability: <strong class="text-orange-400">-12 Buffer</strong></span>
+                                </div>
+                            </label>
+
+                            <!-- Balanced (Standard) -->
+                            <label class="relative flex flex-col justify-between p-3.5 rounded bg-zinc-950/90 border-2 border-zinc-800 hover:border-zinc-400/80 cursor-pointer transition-all has-[:checked]:border-zinc-300 has-[:checked]:bg-zinc-800/30 group">
+                                <input type="radio" name="driving_mode" value="balanced" class="sr-only" checked>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-xs">⚙️</span>
+                                            <span class="font-mono font-black text-sm uppercase text-white group-hover:text-zinc-200">BALANCED</span>
+                                        </div>
+                                        <span class="text-[9px] font-mono font-bold text-zinc-300 bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-700">OPTIMAL</span>
+                                    </div>
+                                    <p class="text-[10px] font-mono text-zinc-400 leading-snug">
+                                        Standard engine mapping. Balanced fuel consumption, nominal reliability, and controlled tire wear.
+                                    </p>
+                                </div>
+                                <div class="mt-2.5 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[9px] font-mono text-zinc-500">
+                                    <span>Attack: <strong class="text-zinc-300">Standard</strong></span>
+                                    <span>Reliability: <strong class="text-zinc-300">Nominal</strong></span>
+                                </div>
+                            </label>
+
+                            <!-- Conserve (Defensive) -->
+                            <label class="relative flex flex-col justify-between p-3.5 rounded bg-zinc-950/90 border-2 border-zinc-800 hover:border-emerald-500/80 cursor-pointer transition-all has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-950/20 group">
+                                <input type="radio" name="driving_mode" value="conserve" class="sr-only">
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-xs">🛡️</span>
+                                            <span class="font-mono font-black text-sm uppercase text-white group-hover:text-emerald-400">CONSERVE (DEFENSE)</span>
+                                        </div>
+                                        <span class="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800/60">+15 RELIABILITY</span>
+                                    </div>
+                                    <p class="text-[10px] font-mono text-zinc-400 leading-snug">
+                                        Defensive positioning and engine care. Reduces tire wear (-30%) and minimizes mechanical faults.
+                                    </p>
+                                </div>
+                                <div class="mt-2.5 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[9px] font-mono text-zinc-500">
+                                    <span>Defense: <strong class="text-emerald-400">+Defense</strong></span>
+                                    <span>Wear: <strong class="text-emerald-400">-30% Rate</strong></span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -214,13 +413,10 @@
                 <!-- Registration & Simulation Action Buttons -->
                 <div class="mt-6 pt-4 border-t border-zinc-800 space-y-2">
                     @if($isReady)
-                        <form method="POST" action="{{ route('races.run', $race) }}" class="w-full">
-                            @csrf
-                            <button type="submit" class="w-full text-center py-3 px-4 rounded bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white text-xs font-mono font-black tracking-wider uppercase transition shadow-lg cursor-pointer flex items-center justify-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
-                                <span>Start Live Race Simulation &rarr;</span>
-                            </button>
-                        </form>
+                        <button type="submit" form="race-sim-form" class="w-full text-center py-3 px-4 rounded bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white text-xs font-mono font-black tracking-wider uppercase transition shadow-lg cursor-pointer flex items-center justify-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                            <span>Start Live Race Simulation &rarr;</span>
+                        </button>
                         <form method="POST" action="{{ route('races.enter', $race) }}" class="w-full">
                             @csrf
                             <button type="submit" class="w-full text-center py-2 px-3 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-300 text-[11px] font-mono font-bold uppercase transition cursor-pointer">

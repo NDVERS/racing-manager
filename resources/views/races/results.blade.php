@@ -63,7 +63,7 @@
                         {{ $team->name }} &bull; {{ $result->driver->name ?? 'Lead Driver' }}
                     </h2>
                     <p class="text-xs font-mono text-zinc-400 mt-0.5">
-                        Vehicle: <span class="text-zinc-200 font-bold">{{ $result->car->name ?? 'Race Chassis' }}</span> &bull; Race Time: <span class="text-white font-bold">{{ $result->race_time }}</span> &bull; Scrutineering Status: <span class="text-emerald-400 font-semibold uppercase">{{ $result->status }}</span>
+                        Vehicle: <span class="text-zinc-200 font-bold">{{ $result->car->name ?? 'Race Chassis' }}</span> &bull; Strategy: <span class="text-amber-400 font-bold uppercase">{{ strtoupper(str_replace('_', ' / ', $result->strategy)) }}</span> &bull; Race Time: <span class="text-white font-bold">{{ $result->race_time }}</span> &bull; Status: <span class="text-emerald-400 font-semibold uppercase">{{ $result->status }}</span>
                     </p>
                 </div>
             </div>

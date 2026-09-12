@@ -195,7 +195,13 @@ class RaceController extends Controller
                 ->with('warning', 'Insufficient credits in team treasury to pay entry fee of '.number_format($race->entry_fee).' CR.');
         }
 
-        $simulationData = DB::transaction(function () use ($race, $team, $activeCar, $primaryDriver, $simulationService) {
+        $validCompounds = ['soft', 'medium', 'hard', 'wet'];
+        $validModes = ['push', 'balanced', 'conserve'];
+
+        $tireCompound = in_array($request->input('tire_compound'), $validCompounds, true) ? $request->input('tire_compound') : 'medium';
+        $drivingMode = in_array($request->input('driving_mode'), $validModes, true) ? $request->input('driving_mode') : 'balanced';
+
+        $simulationData = DB::transaction(function () use ($race, $team, $activeCar, $primaryDriver, $simulationService, $tireCompound, $drivingMode) {
             // 1. Deduct entry fee
             $team->decrement('money', $race->entry_fee);
             $team->refresh();
@@ -210,8 +216,8 @@ class RaceController extends Controller
                 'reference_type' => Race::class,
             ]);
 
-            // 2. Run simulation engine
-            $sim = $simulationService->simulate($race, $team, $activeCar, $primaryDriver);
+            // 2. Run simulation engine with selected tactics
+            $sim = $simulationService->simulate($race, $team, $activeCar, $primaryDriver, $tireCompound, $drivingMode);
 
             $playerPosition = $sim['player_result']['position'];
             $hasFastestLap = isset($sim['fastest_lap_overall']) && ($sim['fastest_lap_overall']['driver'] === $primaryDriver->name);
@@ -308,7 +314,7 @@ class RaceController extends Controller
                 ];
             }
 
-            // 7. Record official RaceResult
+            // 7. Record official RaceResult with tactics
             $raceResult = RaceResult::create([
                 'race_id' => $race->id,
                 'team_id' => $team->id,
@@ -318,7 +324,7 @@ class RaceController extends Controller
                 'race_time' => $sim['player_result']['total_time'],
                 'prize_money' => $prizeMoney,
                 'reputation_earned' => $reputationEarned,
-                'strategy' => 'balanced',
+                'strategy' => "{$drivingMode}_{$tireCompound}",
                 'status' => 'finished',
                 'simulation_log' => $sim,
             ]);
@@ -332,7 +338,7 @@ class RaceController extends Controller
             $sim['balance_after'] = $team->money;
             $sim['reputation_after'] = $team->reputation;
 
-            // Update stored simulation log with complete sponsor settlements
+            // Update stored simulation log with complete sponsor settlements & tactics
             $raceResult->update(['simulation_log' => $sim]);
 
             return $sim;
