@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/garage/dealership/{car}/buy', [GarageController::class, 'buy'])->name('garage.buy');
         Route::get('/garage/{car}', [GarageController::class, 'show'])->name('garage.show');
         Route::post('/garage/{car}/set-active', [GarageController::class, 'setActive'])->name('garage.set-active');
+        Route::post('/garage/{car}/assign-slot', [GarageController::class, 'assignSlot'])->name('garage.assign-slot');
         Route::post('/garage/{car}/upgrades', [GarageController::class, 'purchaseUpgrade'])->name('garage.upgrades.purchase');
 
         // Driver System & Market
@@ -65,6 +66,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/drivers/market/{driver}/hire', [DriverController::class, 'hire'])->name('drivers.hire');
         Route::get('/drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
         Route::post('/drivers/{driver}/set-lead', [DriverController::class, 'setLead'])->name('drivers.set-lead');
+        Route::post('/drivers/{driver}/assign-slot', [DriverController::class, 'assignSlot'])->name('drivers.assign-slot');
 
         // Commercial Sponsors & Partnerships
         Route::get('/sponsors', [SponsorController::class, 'index'])->name('sponsors.index');

@@ -34,49 +34,73 @@
     </div>
 
     <!-- Outcome & Classification Banner -->
-    <div class="bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border {{ $result->position === 1 ? 'border-amber-500/60 shadow-amber-500/10' : ($result->position <= 3 ? 'border-emerald-500/60' : 'border-orange-500/40') }} rounded p-6 shadow-xl relative overflow-hidden">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div class="flex items-center gap-5">
-                <div class="w-16 h-16 rounded bg-zinc-950 border {{ $result->position === 1 ? 'border-amber-400 text-amber-400' : ($result->position <= 3 ? 'border-emerald-400 text-emerald-400' : 'border-orange-400 text-orange-400') }} flex flex-col items-center justify-center font-mono font-black shadow-inner shrink-0">
-                    <span class="text-2xl leading-none">P{{ $result->position }}</span>
-                    <span class="text-[9px] uppercase tracking-wider text-zinc-400">FINISH</span>
-                </div>
-
-                <div>
-                    <div class="flex items-center gap-2">
-                        @if($result->position === 1)
-                            <span class="text-[10px] font-mono font-black uppercase tracking-widest bg-amber-950 border border-amber-500/50 text-amber-400 px-2.5 py-0.5 rounded animate-pulse">
-                                🏆 GRAND PRIX CHAMPION // 1ST PLACE VICTORY
-                            </span>
-                        @elseif($result->position <= 3)
-                            <span class="text-[10px] font-mono font-black uppercase tracking-widest bg-emerald-950 border border-emerald-500/50 text-emerald-400 px-2.5 py-0.5 rounded">
-                                🏁 OFFICIAL PODIUM FINISH // P{{ $result->position }}
-                            </span>
-                        @else
-                            <span class="text-[10px] font-mono font-bold uppercase tracking-widest bg-zinc-800 text-zinc-300 px-2.5 py-0.5 rounded">
-                                OFFICIAL CLASSIFICATION // P{{ $result->position }}
-                            </span>
-                        @endif
+    @php
+        $res1 = $result1 ?? $result ?? null;
+        $res2 = $result2 ?? null;
+    @endphp
+    <div class="bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-amber-500/40 rounded p-6 shadow-xl relative overflow-hidden">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div class="flex flex-wrap items-center gap-4">
+                <!-- Car #1 Debrief Card -->
+                @if($res1)
+                <div class="flex items-center gap-4 bg-zinc-950/80 border border-cyan-500/50 rounded-lg p-4 shadow-md">
+                    <div class="w-14 h-14 rounded bg-zinc-950 border border-cyan-400 text-cyan-300 flex flex-col items-center justify-center font-mono font-black shrink-0">
+                        <span class="text-2xl leading-none">P{{ $res1->position }}</span>
+                        <span class="text-[8px] uppercase tracking-wider text-cyan-400">CAR #1</span>
                     </div>
-
-                    <h2 class="text-xl font-black text-white uppercase font-mono mt-1">
-                        {{ $team->name }} &bull; {{ $result->driver->name ?? 'Lead Driver' }}
-                    </h2>
-                    <p class="text-xs font-mono text-zinc-400 mt-0.5">
-                        Vehicle: <span class="text-zinc-200 font-bold">{{ $result->car->name ?? 'Race Chassis' }}</span> &bull; Strategy: <span class="text-amber-400 font-bold uppercase">{{ strtoupper(str_replace('_', ' / ', $result->strategy)) }}</span> &bull; Race Time: <span class="text-white font-bold">{{ $result->race_time }}</span> &bull; Status: <span class="text-emerald-400 font-semibold uppercase">{{ $result->status }}</span>
-                    </p>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] font-mono font-bold uppercase text-cyan-400">
+                                {{ $res1->position === 1 ? '🏆 VICTORY' : ($res1->position <= 3 ? '🏁 PODIUM' : 'CLASSIFIED') }}
+                            </span>
+                        </div>
+                        <h3 class="text-base font-black text-white uppercase font-mono mt-0.5">
+                            {{ $res1->driver->name ?? 'Driver 1' }}
+                        </h3>
+                        <p class="text-xs font-mono text-zinc-400">
+                            Chassis: <span class="text-zinc-200 font-bold">{{ $res1->car->name ?? 'Car 1' }}</span> &bull; Strategy: <span class="text-amber-400 font-bold uppercase">{{ strtoupper(str_replace('_', ' / ', $res1->strategy)) }}</span> &bull; Prize: <span class="text-amber-400 font-bold">+{{ number_format($res1->prize_money) }} CR</span>
+                        </p>
+                    </div>
                 </div>
+                @endif
+
+                <!-- Car #2 Debrief Card (if present) -->
+                @if(isset($res2) && $res2)
+                    <div class="flex items-center gap-4 bg-zinc-950/80 border border-blue-500/50 rounded-lg p-4 shadow-md">
+                        <div class="w-14 h-14 rounded bg-zinc-950 border border-blue-400 text-blue-300 flex flex-col items-center justify-center font-mono font-black shrink-0">
+                            <span class="text-2xl leading-none">P{{ $res2->position }}</span>
+                            <span class="text-[8px] uppercase tracking-wider text-blue-400">CAR #2</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-mono font-bold uppercase text-blue-400">
+                                    {{ $res2->position === 1 ? '🏆 VICTORY' : ($res2->position <= 3 ? '🏁 PODIUM' : 'CLASSIFIED') }}
+                                </span>
+                            </div>
+                            <h3 class="text-base font-black text-white uppercase font-mono mt-0.5">
+                                {{ $res2->driver->name ?? 'Driver 2' }}
+                            </h3>
+                            <p class="text-xs font-mono text-zinc-400">
+                                Chassis: <span class="text-zinc-200 font-bold">{{ $res2->car->name ?? 'Car 2' }}</span> &bull; Strategy: <span class="text-blue-400 font-bold uppercase">{{ strtoupper(str_replace('_', ' / ', $res2->strategy)) }}</span> &bull; Prize: <span class="text-amber-400 font-bold">+{{ number_format($res2->prize_money) }} CR</span>
+                            </p>
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
+                @php
+                    $grossPrize = (isset($results) && count($results) > 0) ? $results->sum('prize_money') : (($res1->prize_money ?? 0) + ($res2->prize_money ?? 0));
+                    $repEarned = (isset($results) && count($results) > 0) ? $results->sum('reputation_earned') : (($res1->reputation_earned ?? 0) + ($res2->reputation_earned ?? 0));
+                @endphp
                 <div class="bg-zinc-950/80 border border-zinc-800 rounded px-4 py-2.5 text-right font-mono">
-                    <div class="text-[10px] text-zinc-500 uppercase">Prize Earned</div>
-                    <div class="text-base font-black text-amber-400">+{{ number_format($result->prize_money) }} CR</div>
+                    <div class="text-[10px] text-zinc-500 uppercase">Combined Prize</div>
+                    <div class="text-base font-black text-amber-400">+{{ number_format($grossPrize) }} CR</div>
                 </div>
 
                 <div class="bg-zinc-950/80 border border-zinc-800 rounded px-4 py-2.5 text-right font-mono">
                     <div class="text-[10px] text-zinc-500 uppercase">Reputation Added</div>
-                    <div class="text-base font-black text-cyan-400">+{{ number_format($result->reputation_earned) }} PTS</div>
+                    <div class="text-base font-black text-cyan-400">+{{ number_format($repEarned) }} PTS</div>
                 </div>
             </div>
         </div>
@@ -88,9 +112,9 @@
         <div class="bg-zinc-900 border border-zinc-800 rounded p-5 shadow">
             <div class="text-[10px] font-mono uppercase text-zinc-500">Gross Prize Payout</div>
             <div class="text-xl font-mono font-black text-emerald-400 mt-1">
-                +{{ number_format($result->prize_money) }} <span class="text-xs text-zinc-500 font-normal">CR</span>
+                +{{ number_format($grossPrize) }} <span class="text-xs text-zinc-500 font-normal">CR</span>
             </div>
-            <div class="text-[10px] font-mono text-zinc-400 mt-1">Position P{{ $result->position }} Prize Allocation</div>
+            <div class="text-[10px] font-mono text-zinc-400 mt-1">Combined Constructor Payout</div>
         </div>
 
         <!-- Entry Fee Deducted -->
@@ -99,7 +123,7 @@
             <div class="text-xl font-mono font-black text-red-400 mt-1">
                 -{{ number_format($race->entry_fee) }} <span class="text-xs text-zinc-500 font-normal">CR</span>
             </div>
-            <div class="text-[10px] font-mono text-zinc-400 mt-1">Settled at race start</div>
+            <div class="text-[10px] font-mono text-zinc-400 mt-1">Settled per team constructor entry</div>
         </div>
 
         <!-- Net Financial Profit/Loss -->

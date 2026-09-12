@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'level',
     'purchase_price',
     'is_active',
+    'slot',
 ])]
 class Car extends Model
 {
@@ -42,6 +43,7 @@ class Car extends Model
             'level' => 'integer',
             'purchase_price' => 'integer',
             'is_active' => 'boolean',
+            'slot' => 'integer',
         ];
     }
 

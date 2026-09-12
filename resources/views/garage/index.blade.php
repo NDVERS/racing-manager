@@ -25,9 +25,17 @@
 
             <div class="flex items-center gap-3">
                 <div class="bg-zinc-950/90 border border-zinc-800 rounded px-3.5 py-2 text-right">
+                    <div class="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">AVAILABLE TREASURY</div>
+                    <div class="text-lg font-mono font-black text-amber-400 font-telemetry">
+                        {{ number_format($team->credits) }} <span class="text-xs text-zinc-500 font-normal">CR</span>
+                    </div>
+                </div>
+
+                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-3.5 py-2 text-right">
                     <div class="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">TOTAL ASSETS</div>
                     <div class="text-lg font-mono font-black text-white">{{ $cars->count() }} <span class="text-xs text-zinc-400 font-normal">CHASSIS</span></div>
                 </div>
+
                 <a href="{{ route('garage.dealership') }}" class="px-4 py-2.5 rounded bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 hover:from-orange-500 hover:to-amber-400 text-black text-xs font-mono font-black tracking-wider uppercase transition shadow-lg flex items-center gap-1.5 whitespace-nowrap">
                     <span>🛒 Chassis Showroom</span>
                     <span>&rarr;</span>
@@ -110,10 +118,15 @@
                                 <p class="text-xs font-mono text-zinc-400 mt-0.5">Constructor Chassis &bull; ID: #{{ str_pad($car->id, 4, '0', STR_PAD_LEFT) }}</p>
                             </div>
 
-                            @if($car->is_active)
+                            @if($car->slot === 1 || ($car->is_active && $car->slot !== 2))
                                 <span class="text-[10px] font-mono font-black uppercase tracking-wider bg-emerald-950 border border-emerald-500/50 text-emerald-400 px-2.5 py-1 rounded flex items-center gap-1.5 shadow-sm">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    ACTIVE
+                                    CAR #1 (ACTIVE)
+                                </span>
+                            @elseif($car->slot === 2)
+                                <span class="text-[10px] font-mono font-black uppercase tracking-wider bg-blue-950 border border-blue-500/50 text-blue-400 px-2.5 py-1 rounded flex items-center gap-1.5 shadow-sm">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                                    CAR #2 (ACTIVE)
                                 </span>
                             @else
                                 <span class="text-[10px] font-mono font-bold uppercase tracking-wider bg-zinc-950 border border-zinc-800 text-zinc-500 px-2.5 py-1 rounded">
@@ -193,26 +206,43 @@
                     </div>
 
                     <!-- Footer Actions -->
-                    <div class="pt-4 border-t border-zinc-800/80 flex items-center justify-between gap-3">
-                        <a href="{{ route('garage.show', $car) }}" class="text-xs font-mono font-bold text-zinc-300 hover:text-white bg-zinc-950 hover:bg-zinc-800 border border-zinc-700/80 rounded px-3.5 py-2 transition-colors flex items-center gap-1.5">
+                    <div class="pt-4 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-3">
+                        <a href="{{ route('garage.show', $car) }}" class="text-xs font-mono font-bold text-zinc-300 hover:text-white bg-zinc-950 hover:bg-zinc-800 border border-zinc-700/80 rounded px-3 py-2 transition-colors flex items-center gap-1.5">
                             <span>Inspection Sheet</span>
                             <span class="text-zinc-400">&rarr;</span>
                         </a>
 
-                        @if(!$car->is_active)
-                            <form method="POST" action="{{ route('garage.set-active', $car) }}">
-                                @csrf
-                                <button type="submit" class="text-xs font-mono font-bold text-orange-300 hover:text-white bg-orange-950 hover:bg-orange-600 border border-orange-500/50 hover:border-orange-500 rounded px-3.5 py-2 transition-all cursor-pointer shadow-sm">
-                                    Set as Primary Car
-                                </button>
-                            </form>
-                        @else
-                            <span class="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 rounded px-3.5 py-2 flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span>Primary Race Car</span>
-                            </span>
-                        @endif
-                    </div>
+                        <div class="flex items-center gap-2">
+                            @if($car->slot !== 1 && !($car->is_active && $car->slot !== 2))
+                                <form method="POST" action="{{ route('garage.assign-slot', $car) }}">
+                                    @csrf
+                                    <input type="hidden" name="slot" value="1">
+                                    <button type="submit" class="text-xs font-mono font-bold text-emerald-300 hover:text-white bg-emerald-950/70 hover:bg-emerald-700 border border-emerald-500/50 rounded px-2.5 py-1.5 transition-all cursor-pointer">
+                                        Slot #1
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if($car->slot !== 2)
+                                <form method="POST" action="{{ route('garage.assign-slot', $car) }}">
+                                    @csrf
+                                    <input type="hidden" name="slot" value="2">
+                                    <button type="submit" class="text-xs font-mono font-bold text-blue-300 hover:text-white bg-blue-950/70 hover:bg-blue-700 border border-blue-500/50 rounded px-2.5 py-1.5 transition-all cursor-pointer">
+                                        Slot #2
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if($car->slot !== null)
+                                <form method="POST" action="{{ route('garage.assign-slot', $car) }}">
+                                    @csrf
+                                    <input type="hidden" name="slot" value="0">
+                                    <button type="submit" class="text-xs font-mono font-bold text-zinc-400 hover:text-zinc-200 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded px-2.5 py-1.5 transition-all cursor-pointer">
+                                        Unassign
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
                 </div>
             @empty
                 <div class="col-span-2 bg-zinc-900 border border-zinc-800 rounded p-12 text-center">

@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'experience',
     'salary',
     'is_lead',
+    'slot',
 ])]
 class Driver extends Model
 {
@@ -44,6 +45,7 @@ class Driver extends Model
             'experience' => 'integer',
             'salary' => 'integer',
             'is_lead' => 'boolean',
+            'slot' => 'integer',
         ];
     }
 

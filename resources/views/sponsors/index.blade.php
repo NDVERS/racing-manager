@@ -125,6 +125,7 @@
             <div class="flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded bg-cyan-500"></span>
                 <h2 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Commercial Sponsor Market</h2>
+                <span class="text-xs font-mono text-zinc-500">({{ $allSponsors->count() }} Open Deals)</span>
             </div>
             <div class="text-xs font-mono text-zinc-400">
                 Team Reputation: <span class="text-cyan-400 font-bold">{{ $team->reputation }} REP</span>

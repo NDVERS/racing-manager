@@ -37,7 +37,37 @@ class SponsorController extends Controller
             ->take(6)
             ->get();
 
-        $allSponsors = Sponsor::orderBy('min_reputation')->get();
+        $activeSponsorIds = $activeContracts->pluck('sponsor_id')->toArray();
+        $expiredSponsorIds = $expiredContracts->pluck('sponsor_id')->toArray();
+
+        // 1. First priority: Fresh uncontracted sponsors not active and not recently expired
+        $freshMarketSponsors = Sponsor::whereNotIn('id', array_merge($activeSponsorIds, $expiredSponsorIds))
+            ->orderBy('min_reputation', 'asc')
+            ->get();
+
+        // 2. Second priority: If fewer than 9 fresh sponsors, allow renewable (previously expired) sponsors to fill the slots
+        if ($freshMarketSponsors->count() < 9) {
+            $needed = 9 - $freshMarketSponsors->count();
+            $renewableSponsors = Sponsor::whereIn('id', $expiredSponsorIds)
+                ->whereNotIn('id', $activeSponsorIds)
+                ->orderBy('min_reputation', 'asc')
+                ->take($needed)
+                ->get();
+
+            $marketSponsors = $freshMarketSponsors->merge($renewableSponsors);
+        } else {
+            $marketSponsors = $freshMarketSponsors->take(9);
+        }
+
+        // 3. Fallback: If total uncontracted sponsors is small, fill remaining slots
+        if ($marketSponsors->count() < 9) {
+            $existingMarketIds = $marketSponsors->pluck('id')->merge($activeSponsorIds)->toArray();
+            $fillers = Sponsor::whereNotIn('id', $existingMarketIds)
+                ->orderBy('min_reputation', 'asc')
+                ->take(9 - $marketSponsors->count())
+                ->get();
+            $marketSponsors = $marketSponsors->merge($fillers);
+        }
 
         $activePrimaryCount = $activeContracts->filter(fn ($c) => strtolower($c->sponsor->tier) === 'primary')->count();
         $activeSecondaryCount = $activeContracts->filter(fn ($c) => in_array(strtolower($c->sponsor->tier), ['secondary', 'tertiary']))->count();
@@ -51,7 +81,8 @@ class SponsorController extends Controller
             'team' => $team,
             'activeContracts' => $activeContracts,
             'expiredContracts' => $expiredContracts,
-            'allSponsors' => $allSponsors,
+            'allSponsors' => $marketSponsors,
+            'marketSponsors' => $marketSponsors,
             'activePrimaryCount' => $activePrimaryCount,
             'activeSecondaryCount' => $activeSecondaryCount,
             'totalSponsorEarnings' => $totalSponsorEarnings,

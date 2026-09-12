@@ -87,49 +87,51 @@
     </div>
 
     <!-- Player Outcome Banner -->
+    <!-- Player Outcome Banner -->
     @php
-        $pRes = $simulation['player_result'];
-        $pos = $pRes['position'] ?? 10;
+        $pRes1 = $simulation['player_result_1'] ?? $simulation['player_result'];
+        $pRes2 = $simulation['player_result_2'] ?? null;
+        $isTwoCar = !empty($simulation['is_two_car']) && $pRes2 !== null;
+        $pos1 = $pRes1['position'] ?? 10;
+        $pos2 = $pRes2['position'] ?? null;
     @endphp
-    <div class="bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border {{ $pos === 1 ? 'border-amber-500/60 shadow-amber-500/10' : ($pos <= 3 ? 'border-emerald-500/60' : 'border-orange-500/40') }} rounded p-6 shadow-xl relative overflow-hidden">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div class="flex items-center gap-5">
-                <div class="w-16 h-16 rounded bg-zinc-950 border {{ $pos === 1 ? 'border-amber-400 text-amber-400' : ($pos <= 3 ? 'border-emerald-400 text-emerald-400' : 'border-orange-400 text-orange-400') }} flex flex-col items-center justify-center font-mono font-black shadow-inner shrink-0">
-                    <span class="text-2xl leading-none">P{{ $pos }}</span>
-                    <span class="text-[9px] uppercase tracking-wider text-zinc-400">FINISH</span>
+    <div class="bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-cyan-500/40 rounded p-6 shadow-xl relative overflow-hidden">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div class="flex flex-wrap items-center gap-5">
+                <!-- Car #1 Card -->
+                <div class="flex items-center gap-3 bg-zinc-950/80 border border-cyan-500/50 rounded-lg p-3.5 shadow-md">
+                    <div class="w-12 h-12 rounded bg-cyan-950 border border-cyan-400 text-cyan-300 flex flex-col items-center justify-center font-mono font-black shrink-0">
+                        <span class="text-xl leading-none">P{{ $pos1 }}</span>
+                        <span class="text-[8px] uppercase tracking-wider text-cyan-400">CAR #1</span>
+                    </div>
+                    <div>
+                        <span class="text-[9px] font-mono font-bold uppercase tracking-widest text-cyan-400 block">
+                            {{ $pos1 === 1 ? '🏆 VICTORY' : ($pos1 <= 3 ? '🏁 PODIUM' : 'CLASSIFIED') }}
+                        </span>
+                        <h3 class="text-sm font-black text-white font-mono uppercase">{{ $pRes1['driver_name'] }}</h3>
+                        <p class="text-[11px] font-mono text-zinc-400">{{ $pRes1['car_name'] }} &bull; {{ $pRes1['total_time'] }}</p>
+                    </div>
                 </div>
 
-                <div>
-                    <div class="flex items-center gap-2">
-                        @if($pos === 1)
-                            <span class="text-[10px] font-mono font-black uppercase tracking-widest bg-amber-950 border border-amber-500/50 text-amber-400 px-2.5 py-0.5 rounded animate-pulse">
-                                🏆 GRAND PRIX VICTORY // 1ST PLACE
+                <!-- Car #2 Card (if 2-car entry) -->
+                @if($isTwoCar)
+                    <div class="flex items-center gap-3 bg-zinc-950/80 border border-blue-500/50 rounded-lg p-3.5 shadow-md">
+                        <div class="w-12 h-12 rounded bg-blue-950 border border-blue-400 text-blue-300 flex flex-col items-center justify-center font-mono font-black shrink-0">
+                            <span class="text-xl leading-none">P{{ $pos2 }}</span>
+                            <span class="text-[8px] uppercase tracking-wider text-blue-400">CAR #2</span>
+                        </div>
+                        <div>
+                            <span class="text-[9px] font-mono font-bold uppercase tracking-widest text-blue-400 block">
+                                {{ $pos2 === 1 ? '🏆 VICTORY' : ($pos2 <= 3 ? '🏁 PODIUM' : 'CLASSIFIED') }}
                             </span>
-                        @elseif($pos <= 3)
-                            <span class="text-[10px] font-mono font-black uppercase tracking-widest bg-emerald-950 border border-emerald-500/50 text-emerald-400 px-2.5 py-0.5 rounded">
-                                🏁 PODIUM FINISH // P{{ $pos }}
-                            </span>
-                        @else
-                            <span class="text-[10px] font-mono font-bold uppercase tracking-widest bg-zinc-800 text-zinc-300 px-2.5 py-0.5 rounded">
-                                OFFICIAL CLASSIFICATION // P{{ $pos }}
-                            </span>
-                        @endif
+                            <h3 class="text-sm font-black text-white font-mono uppercase">{{ $pRes2['driver_name'] }}</h3>
+                            <p class="text-[11px] font-mono text-zinc-400">{{ $pRes2['car_name'] }} &bull; {{ $pRes2['total_time'] }}</p>
+                        </div>
                     </div>
-                    <h2 class="text-xl font-black text-white uppercase font-mono mt-1">
-                        {{ $simulation['player_team']['name'] }} &bull; {{ $pRes['driver_name'] }}
-                    </h2>
-                    <p class="text-xs font-mono text-zinc-400 mt-0.5">
-                        Chassis: <span class="text-zinc-200 font-bold">{{ $pRes['car_name'] }}</span> &bull; Total Time: <span class="text-white font-bold">{{ $pRes['total_time'] }}</span> &bull; Gap: <span class="text-amber-400 font-bold">{{ $pRes['gap'] }}</span>
-                    </p>
-                </div>
+                @endif
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                <div class="bg-zinc-950/80 border border-zinc-800 rounded px-4 py-2.5 text-right font-mono">
-                    <div class="text-[10px] text-zinc-500 uppercase">Driver Best Lap</div>
-                    <div class="text-sm font-black text-cyan-400">{{ $pRes['fastest_lap'] }}</div>
-                </div>
-
                 <a href="{{ route('races.results', $race) }}" class="px-5 py-3 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold tracking-wider uppercase transition shadow-md flex items-center gap-2">
                     <span>Official Debrief & Ledger</span>
                     <span>&rarr;</span>
@@ -149,7 +151,7 @@
                         <span class="w-2 h-2 rounded bg-orange-500"></span>
                         <h2 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Grand Prix Final Classification</h2>
                     </div>
-                    <span class="text-xs font-mono text-zinc-400">10 Competitors Classified</span>
+                    <span class="text-xs font-mono text-zinc-400">{{ count($simulation['standings']) }} Competitors Classified</span>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -166,7 +168,11 @@
                         </thead>
                         <tbody class="divide-y divide-zinc-800/60">
                             @foreach($simulation['standings'] as $driver)
-                                <tr class="{{ $driver['is_player'] ? 'bg-orange-950/40 border-l-2 border-l-orange-500 font-bold' : 'hover:bg-zinc-800/30' }} transition-colors">
+                                @php
+                                    $isPlayer = !empty($driver['is_player']);
+                                    $slot = $driver['car_slot'] ?? 1;
+                                @endphp
+                                <tr class="{{ $isPlayer ? ($slot === 1 ? 'bg-cyan-950/40 border-l-2 border-l-cyan-400 font-bold' : 'bg-blue-950/40 border-l-2 border-l-blue-400 font-bold') : 'hover:bg-zinc-800/30' }} transition-colors">
                                     <!-- Position -->
                                     <td class="py-3 px-3">
                                         @if($driver['position'] === 1)
@@ -186,8 +192,12 @@
                                             <div>
                                                 <div class="text-white font-bold flex items-center gap-1.5">
                                                     <span>{{ $driver['driver_name'] }}</span>
-                                                    @if($driver['is_player'])
-                                                        <span class="text-[9px] bg-orange-600 text-white px-1.5 py-0.2 rounded font-black tracking-tighter">YOU</span>
+                                                    @if($isPlayer)
+                                                        @if($slot === 1)
+                                                            <span class="text-[9px] bg-cyan-600 text-white px-1.5 py-0.2 rounded font-black tracking-tighter">CAR #1 (YOU)</span>
+                                                        @else
+                                                            <span class="text-[9px] bg-blue-600 text-white px-1.5 py-0.2 rounded font-black tracking-tighter">CAR #2 (YOU)</span>
+                                                        @endif
                                                     @endif
                                                 </div>
                                                 <div class="text-[10px] text-zinc-400 uppercase font-normal">{{ $driver['team_name'] }} &bull; {{ $driver['car_name'] }}</div>

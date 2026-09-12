@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'team_id',
     'car_id',
     'driver_id',
+    'car_slot',
     'season',
     'position',
     'race_time',
@@ -35,6 +36,7 @@ class RaceResult extends Model
     protected function casts(): array
     {
         return [
+            'car_slot' => 'integer',
             'season' => 'integer',
             'position' => 'integer',
             'prize_money' => 'integer',

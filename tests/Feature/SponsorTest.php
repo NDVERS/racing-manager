@@ -364,4 +364,59 @@ class SponsorTest extends TestCase
         $this->assertTrue($teamA->hasActiveSponsor($sponsorA->id));
         $this->assertFalse($teamA->hasActiveSponsor($sponsorB->id));
     }
+
+    /**
+     * Test SponsorSeeder populates at least 18 diverse corporate sponsors.
+     */
+    public function test_seeder_provides_at_least_18_diverse_sponsors(): void
+    {
+        $this->seed(SponsorSeeder::class);
+
+        $this->assertGreaterThanOrEqual(18, Sponsor::count());
+        $this->assertGreaterThanOrEqual(5, Sponsor::where('tier', 'primary')->count());
+        $this->assertGreaterThanOrEqual(10, Sponsor::where('tier', 'secondary')->count());
+    }
+
+    /**
+     * Test sponsors market displays 9 open deals and rotates when a contract expires.
+     */
+    public function test_sponsors_market_displays_nine_open_deals_and_rotates_expired_sponsors(): void
+    {
+        $this->seed(SponsorSeeder::class);
+
+        $user = User::factory()->create();
+        $team = Team::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'Chronos GP',
+            'reputation' => 100,
+        ]);
+
+        // Access market initially
+        $response = $this->actingAs($user)->get(route('sponsors.index'));
+        $response->assertOk();
+
+        $marketSponsors = $response->viewData('allSponsors');
+        $this->assertCount(9, $marketSponsors);
+
+        // Sign 1 sponsor from the initial 9
+        $firstSponsor = $marketSponsors->first();
+        $this->actingAs($user)->post(route('sponsors.sign', $firstSponsor));
+
+        // Now view market again: active sponsor must NOT be in the open market proposals
+        $responseAfterSign = $this->actingAs($user)->get(route('sponsors.index'));
+        $marketAfterSign = $responseAfterSign->viewData('allSponsors');
+        $this->assertCount(9, $marketAfterSign);
+        $this->assertFalse($marketAfterSign->contains('id', $firstSponsor->id));
+
+        // Simulate expiration of the signed sponsor contract
+        $contract = $team->teamSponsors()->where('sponsor_id', $firstSponsor->id)->first();
+        $contract->update(['is_active' => false, 'races_remaining' => 0]);
+
+        // After expiration, fresh sponsors from pool are prioritized over the expired sponsor
+        $responseAfterExpire = $this->actingAs($user)->get(route('sponsors.index'));
+        $marketAfterExpire = $responseAfterExpire->viewData('allSponsors');
+        $this->assertCount(9, $marketAfterExpire);
+        // The newly proposed 9 deals are fresh uncontracted brands from the large pool
+        $this->assertFalse($marketAfterExpire->contains('id', $firstSponsor->id));
+    }
 }

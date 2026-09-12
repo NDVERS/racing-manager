@@ -76,7 +76,7 @@ class DriverController extends Controller
     }
 
     /**
-     * Set a driver as the team's Lead/Primary Race Driver.
+     * Set a driver as the team's Lead/Primary Race Driver (Slot 1).
      */
     public function setLead(Request $request, Driver $driver): RedirectResponse
     {
@@ -91,12 +91,57 @@ class DriverController extends Controller
         }
 
         DB::transaction(function () use ($team, $driver) {
+            $team->drivers()->where('slot', 1)->update(['slot' => null, 'is_lead' => false]);
             $team->drivers()->update(['is_lead' => false]);
-            $driver->update(['is_lead' => true]);
+            $driver->update(['is_lead' => true, 'slot' => 1]);
         });
 
         return redirect()->back()
-            ->with('success', "{$driver->name} is now designated as your Lead Race Driver.");
+            ->with('success', "{$driver->name} is now designated as your Lead Race Driver (Driver #1).");
+    }
+
+    /**
+     * Assign a driver to a specific race slot (Slot 1, Slot 2, or reserve).
+     */
+    public function assignSlot(Request $request, Driver $driver): RedirectResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        /** @var Team $team */
+        $team = $user->team;
+
+        // Scoping / Authorization: Driver must belong to the authenticated user's team
+        if ($driver->team_id !== $team->id) {
+            abort(404, 'Driver not found in your team roster.');
+        }
+
+        $validated = $request->validate([
+            'slot' => ['nullable', 'integer', 'in:1,2,0'],
+        ]);
+
+        $targetSlot = isset($validated['slot']) && (int) $validated['slot'] > 0 ? (int) $validated['slot'] : null;
+
+        DB::transaction(function () use ($team, $driver, $targetSlot) {
+            if ($targetSlot !== null) {
+                // Remove this slot from any other driver in the team
+                $team->drivers()->where('slot', $targetSlot)->update(['slot' => null]);
+
+                if ($targetSlot === 1) {
+                    $team->drivers()->update(['is_lead' => false]);
+                    $driver->update(['slot' => 1, 'is_lead' => true]);
+                } else {
+                    $driver->update(['slot' => $targetSlot, 'is_lead' => false]);
+                }
+            } else {
+                $driver->update(['slot' => null, 'is_lead' => false]);
+            }
+        });
+
+        $message = $targetSlot !== null
+            ? "{$driver->name} has been assigned to Entry Slot #{$targetSlot}."
+            : "{$driver->name} has been placed in reserve roster.";
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**
@@ -127,11 +172,24 @@ class DriverController extends Controller
             $team->decrement('money', $hiringCost);
             $team->refresh();
 
-            $isFirstDriver = $team->drivers()->count() === 0;
+            $hasSlot1 = $team->drivers()->where('slot', 1)->exists() || $team->drivers()->where('is_lead', true)->exists();
+            $hasSlot2 = $team->drivers()->where('slot', 2)->exists();
+
+            if (! $hasSlot1) {
+                $slot = 1;
+                $isLead = true;
+            } elseif (! $hasSlot2) {
+                $slot = 2;
+                $isLead = false;
+            } else {
+                $slot = null;
+                $isLead = false;
+            }
 
             $driver->update([
                 'team_id' => $team->id,
-                'is_lead' => $isFirstDriver,
+                'slot' => $slot,
+                'is_lead' => $isLead,
             ]);
 
             Transaction::create([

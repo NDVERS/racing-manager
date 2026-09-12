@@ -221,18 +221,19 @@ class GarageController extends Controller
                 ->with('error', "{$car->name} is a privately commissioned chassis and cannot be acquired from the dealership.");
         }
 
-        // Validation 2: Sasis model already owned in fleet
-        if ($team->cars()->where('name', $car->name)->exists()) {
-            return redirect()->route('garage.dealership')
-                ->with('warning', "Your constructor fleet already operates a {$car->name} chassis in the garage.");
-        }
-
         $purchasePrice = (int) ($car->purchase_price ?? 30000);
 
-        // Validation 3: Saldo mencukupi
+        // Validation 2: Saldo mencukupi
         if ($team->credits < $purchasePrice) {
             return redirect()->route('garage.dealership')
                 ->with('error', 'Insufficient credits in team treasury to acquire '.$car->name.'. Required: '.number_format($purchasePrice).' CR, Available: '.number_format($team->credits).' CR.');
+        }
+
+        // Validation 3: Cegah duplikasi sasis yang sudah dimiliki
+        $alreadyOwned = $team->cars()->where('name', $car->name)->exists();
+        if ($alreadyOwned) {
+            return redirect()->route('garage.dealership')
+                ->with('warning', "You already own a {$car->name} chassis in your team fleet. Duplicate blueprints cannot be commissioned.");
         }
 
         DB::transaction(function () use ($team, $car, $purchasePrice) {
@@ -254,7 +255,22 @@ class GarageController extends Controller
             // 3. Replicate template car menjadi mobil baru milik tim
             $newCar = $car->replicate();
             $newCar->team_id = $team->id;
-            $newCar->is_active = ($team->cars()->count() === 0);
+
+            // If team doesn't have car in slot 1, assign to slot 1. Else if slot 2 is empty, assign to slot 2.
+            $hasSlot1 = $team->cars()->where('slot', 1)->exists() || $team->cars()->where('is_active', true)->exists();
+            $hasSlot2 = $team->cars()->where('slot', 2)->exists();
+
+            if (! $hasSlot1) {
+                $newCar->slot = 1;
+                $newCar->is_active = true;
+            } elseif (! $hasSlot2) {
+                $newCar->slot = 2;
+                $newCar->is_active = false;
+            } else {
+                $newCar->slot = null;
+                $newCar->is_active = false;
+            }
+
             $newCar->level = 1;
             $newCar->save();
         });
@@ -264,7 +280,7 @@ class GarageController extends Controller
     }
 
     /**
-     * Set a car as the team's active race vehicle.
+     * Set a car as the team's active race vehicle (legacy slot 1).
      */
     public function setActive(Request $request, Car $car): RedirectResponse
     {
@@ -279,11 +295,56 @@ class GarageController extends Controller
         }
 
         DB::transaction(function () use ($team, $car) {
+            $team->cars()->where('slot', 1)->update(['slot' => null, 'is_active' => false]);
             $team->cars()->update(['is_active' => false]);
-            $car->update(['is_active' => true]);
+            $car->update(['is_active' => true, 'slot' => 1]);
         });
 
         return redirect()->back()
-            ->with('success', "{$car->name} is now designated as your active primary race car.");
+            ->with('success', "{$car->name} is now designated as your active primary race car (Car #1).");
+    }
+
+    /**
+     * Assign a car to a specific race slot (Slot 1, Slot 2, or unassigned).
+     */
+    public function assignSlot(Request $request, Car $car): RedirectResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        /** @var Team $team */
+        $team = $user->team;
+
+        // Scoping / Authorization: Car must belong to the authenticated user's team
+        if ($car->team_id !== $team->id) {
+            abort(404, 'Car not found in team garage.');
+        }
+
+        $validated = $request->validate([
+            'slot' => ['nullable', 'integer', 'in:1,2,0'],
+        ]);
+
+        $targetSlot = isset($validated['slot']) && (int) $validated['slot'] > 0 ? (int) $validated['slot'] : null;
+
+        DB::transaction(function () use ($team, $car, $targetSlot) {
+            if ($targetSlot !== null) {
+                // Remove this slot from any other car in the team
+                $team->cars()->where('slot', $targetSlot)->update(['slot' => null]);
+
+                if ($targetSlot === 1) {
+                    $team->cars()->update(['is_active' => false]);
+                    $car->update(['slot' => 1, 'is_active' => true]);
+                } else {
+                    $car->update(['slot' => $targetSlot, 'is_active' => false]);
+                }
+            } else {
+                $car->update(['slot' => null, 'is_active' => false]);
+            }
+        });
+
+        $message = $targetSlot !== null
+            ? "{$car->name} has been assigned to Entry Slot #{$targetSlot}."
+            : "{$car->name} has been unassigned to reserve fleet.";
+
+        return redirect()->back()->with('success', $message);
     }
 }

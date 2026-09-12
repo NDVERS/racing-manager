@@ -91,10 +91,15 @@
                                 <p class="text-xs font-mono text-zinc-400 mt-0.5">Contract Fee: <span class="text-amber-400 font-bold">{{ number_format($driver->salary) }} CR</span> / race</p>
                             </div>
 
-                            @if($driver->is_lead)
+                            @if($driver->slot === 1 || ($driver->is_lead && $driver->slot !== 2))
                                 <span class="text-[10px] font-mono font-black uppercase tracking-wider bg-cyan-950 border border-cyan-500/50 text-cyan-400 px-2.5 py-1 rounded flex items-center gap-1.5 shadow-sm">
                                     <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                                    LEAD DRIVER
+                                    DRIVER #1 (LEAD DRIVER)
+                                </span>
+                            @elseif($driver->slot === 2)
+                                <span class="text-[10px] font-mono font-black uppercase tracking-wider bg-blue-950 border border-blue-500/50 text-blue-400 px-2.5 py-1 rounded flex items-center gap-1.5 shadow-sm">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                                    DRIVER #2 (SECONDARY)
                                 </span>
                             @else
                                 <span class="text-[10px] font-mono font-bold uppercase tracking-wider bg-zinc-950 border border-zinc-800 text-zinc-500 px-2.5 py-1 rounded">
@@ -137,25 +142,43 @@
                     </div>
 
                     <!-- Footer Actions -->
-                    <div class="pt-4 border-t border-zinc-800/80 flex items-center justify-between gap-3">
-                        <a href="{{ route('drivers.show', $driver) }}" class="text-xs font-mono font-bold text-zinc-300 hover:text-white bg-zinc-950 hover:bg-zinc-800 border border-zinc-700/80 rounded px-3.5 py-2 transition-colors flex items-center gap-1.5">
+                    <div class="pt-4 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-3">
+                        <a href="{{ route('drivers.show', $driver) }}" class="text-xs font-mono font-bold text-zinc-300 hover:text-white bg-zinc-950 hover:bg-zinc-800 border border-zinc-700/80 rounded px-3 py-2 transition-colors flex items-center gap-1.5">
                             <span>Driver Dossier</span>
                             <span class="text-zinc-400">&rarr;</span>
                         </a>
 
-                        @if(!$driver->is_lead)
-                            <form method="POST" action="{{ route('drivers.set-lead', $driver) }}">
-                                @csrf
-                                <button type="submit" class="text-xs font-mono font-bold text-cyan-300 hover:text-white bg-cyan-950 hover:bg-cyan-600 border border-cyan-500/50 hover:border-cyan-500 rounded px-3.5 py-2 transition-all cursor-pointer shadow-sm">
-                                    Promote to Lead Driver
-                                </button>
-                            </form>
-                        @else
-                            <span class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 rounded px-3.5 py-2 flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span>Designated Lead Driver</span>
-                            </span>
-                        @endif
+                        <div class="flex items-center gap-2">
+                            @if($driver->slot !== 1 && !($driver->is_lead && $driver->slot !== 2))
+                                <form method="POST" action="{{ route('drivers.assign-slot', $driver) }}">
+                                    @csrf
+                                    <input type="hidden" name="slot" value="1">
+                                    <button type="submit" class="text-xs font-mono font-bold text-cyan-300 hover:text-white bg-cyan-950/70 hover:bg-cyan-700 border border-cyan-500/50 rounded px-2.5 py-1.5 transition-all cursor-pointer">
+                                        Slot #1
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if($driver->slot !== 2)
+                                <form method="POST" action="{{ route('drivers.assign-slot', $driver) }}">
+                                    @csrf
+                                    <input type="hidden" name="slot" value="2">
+                                    <button type="submit" class="text-xs font-mono font-bold text-blue-300 hover:text-white bg-blue-950/70 hover:bg-blue-700 border border-blue-500/50 rounded px-2.5 py-1.5 transition-all cursor-pointer">
+                                        Slot #2
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if($driver->slot !== null)
+                                <form method="POST" action="{{ route('drivers.assign-slot', $driver) }}">
+                                    @csrf
+                                    <input type="hidden" name="slot" value="0">
+                                    <button type="submit" class="text-xs font-mono font-bold text-zinc-400 hover:text-zinc-200 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded px-2.5 py-1.5 transition-all cursor-pointer">
+                                        Reserve
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
                     </div>
                 </div>
             @empty

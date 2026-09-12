@@ -14,20 +14,97 @@ class RaceSimulationService
      *
      * @var array<int, array{team: string, driver: string, car: string, base_ovr: int}>
      */
+    /**
+     * AI Competitor constructors and driver pairs pool for 2-car grid generation.
+     *
+     * @var array<int, array{team: string, driver1: string, car1: string, ovr1: int, driver2: string, car2: string, ovr2: int}>
+     */
     protected array $aiGridPool = [
-        ['team' => 'Scuderia Veloce', 'driver' => 'Marco Rossi', 'car' => 'Veloce C26', 'base_ovr' => 74],
-        ['team' => 'Silverstone Dynamics', 'driver' => 'Liam Vance', 'car' => 'SD-08 Arrow', 'base_ovr' => 72],
-        ['team' => 'AeroTech Motorsport', 'driver' => 'Elena Rostova', 'car' => 'AT-Aero Pro', 'base_ovr' => 71],
-        ['team' => 'Nordic Speedworks', 'driver' => 'Lukas Lindqvist', 'car' => 'Valkyrie R', 'base_ovr' => 69],
-        ['team' => 'Kronos Racing GP', 'driver' => 'Marcus Chen', 'car' => 'Kronos K9', 'base_ovr' => 68],
-        ['team' => 'Apex Performance', 'driver' => 'Sofia Bianchi', 'car' => 'Apex Apex-1', 'base_ovr' => 66],
-        ['team' => 'Hyperion Grand Prix', 'driver' => 'Tariq Mansoor', 'car' => 'Hyperion H7', 'base_ovr' => 65],
-        ['team' => 'Blackline Racing', 'driver' => 'Lucas Silva', 'car' => 'Shadow RS', 'base_ovr' => 63],
-        ['team' => 'Zenith Motorsport', 'driver' => 'Kenji Sato', 'car' => 'Zenith Type-R', 'base_ovr' => 75],
+        [
+            'team' => 'Scuderia Veloce',
+            'driver1' => 'Marco Rossi',
+            'car1' => 'Veloce C26',
+            'ovr1' => 74,
+            'driver2' => 'Matteo Ricci',
+            'car2' => 'Veloce C26',
+            'ovr2' => 73,
+        ],
+        [
+            'team' => 'Silverstone Dynamics',
+            'driver1' => 'Liam Vance',
+            'car1' => 'SD-08 Arrow',
+            'ovr1' => 72,
+            'driver2' => 'Oliver Sterling',
+            'car2' => 'SD-08 Arrow',
+            'ovr2' => 70,
+        ],
+        [
+            'team' => 'AeroTech Motorsport',
+            'driver1' => 'Elena Rostova',
+            'car1' => 'AT-Aero Pro',
+            'ovr1' => 71,
+            'driver2' => 'Viktor Weber',
+            'car2' => 'AT-Aero Pro',
+            'ovr2' => 69,
+        ],
+        [
+            'team' => 'Nordic Speedworks',
+            'driver1' => 'Lukas Lindqvist',
+            'car1' => 'Valkyrie R',
+            'ovr1' => 69,
+            'driver2' => 'Astrid Holm',
+            'car2' => 'Valkyrie R',
+            'ovr2' => 67,
+        ],
+        [
+            'team' => 'Kronos Racing GP',
+            'driver1' => 'Marcus Chen',
+            'car1' => 'Kronos K9',
+            'ovr1' => 68,
+            'driver2' => 'Daniel Cho',
+            'car2' => 'Kronos K9',
+            'ovr2' => 66,
+        ],
+        [
+            'team' => 'Apex Performance',
+            'driver1' => 'Sofia Bianchi',
+            'car1' => 'Apex Apex-1',
+            'ovr1' => 66,
+            'driver2' => 'Carlos Mendez',
+            'car2' => 'Apex Apex-1',
+            'ovr2' => 64,
+        ],
+        [
+            'team' => 'Hyperion Grand Prix',
+            'driver1' => 'Tariq Mansoor',
+            'car1' => 'Hyperion H7',
+            'ovr1' => 65,
+            'driver2' => 'Andre Dubois',
+            'car2' => 'Hyperion H7',
+            'ovr2' => 63,
+        ],
+        [
+            'team' => 'Blackline Racing',
+            'driver1' => 'Lucas Silva',
+            'car1' => 'Shadow RS',
+            'ovr1' => 63,
+            'driver2' => 'Mason Vance',
+            'car2' => 'Shadow RS',
+            'ovr2' => 61,
+        ],
+        [
+            'team' => 'Zenith Motorsport',
+            'driver1' => 'Kenji Sato',
+            'car1' => 'Zenith Type-R',
+            'ovr1' => 75,
+            'driver2' => 'Hiroshi Tanaka',
+            'car2' => 'Zenith Type-R',
+            'ovr2' => 73,
+        ],
     ];
 
     /**
-     * Simulate a complete Grand Prix race with tactical tire compounds and engine driving modes.
+     * Simulate a complete Grand Prix race with single-car or two-car entry and tactical strategy.
      *
      * @return array<string, mixed>
      */
@@ -37,13 +114,22 @@ class RaceSimulationService
         Car $playerCar,
         Driver $playerDriver,
         string $tireCompound = 'medium',
-        string $drivingMode = 'balanced'
+        string $drivingMode = 'balanced',
+        ?Car $playerCar2 = null,
+        ?Driver $playerDriver2 = null,
+        string $tireCompound2 = 'medium',
+        string $drivingMode2 = 'balanced'
     ): array {
         $validCompounds = ['soft', 'medium', 'hard', 'wet'];
         $validModes = ['push', 'balanced', 'conserve'];
 
         $tireCompound = in_array(strtolower($tireCompound), $validCompounds, true) ? strtolower($tireCompound) : 'medium';
         $drivingMode = in_array(strtolower($drivingMode), $validModes, true) ? strtolower($drivingMode) : 'balanced';
+
+        $tireCompound2 = in_array(strtolower($tireCompound2), $validCompounds, true) ? strtolower($tireCompound2) : 'medium';
+        $drivingMode2 = in_array(strtolower($drivingMode2), $validModes, true) ? strtolower($drivingMode2) : 'balanced';
+
+        $isTwoCar = ($playerCar2 !== null && $playerDriver2 !== null);
 
         $totalLaps = max(5, $race->laps);
         $trackType = $race->track_type;
@@ -56,19 +142,21 @@ class RaceSimulationService
         }
 
         // 1. Calculate Player Competitor Performance Index (0-100)
-        $playerPerf = $this->calculatePerformanceIndex($playerCar, $playerDriver, $trackType, $weather);
+        $playerPerf1 = $this->calculatePerformanceIndex($playerCar, $playerDriver, $trackType, $weather);
 
-        // 2. Build Grid: 1 Player + 9 AI Competitors
         $competitors = [];
 
-        // Player entry
+        // Player Car 1 entry
         $competitors[] = [
-            'id' => 'player_'.$playerTeam->id,
+            'id' => 'player_1',
             'is_player' => true,
+            'car_slot' => 1,
             'team_name' => $playerTeam->name,
             'driver_name' => $playerDriver->name,
             'car_name' => $playerCar->name,
-            'perf_index' => $playerPerf,
+            'car_id' => $playerCar->id,
+            'driver_id' => $playerDriver->id,
+            'perf_index' => $playerPerf1,
             'consistency' => $playerDriver->consistency,
             'reliability' => $playerCar->reliability,
             'racecraft' => $playerDriver->racecraft,
@@ -81,36 +169,24 @@ class RaceSimulationService
             'positions_by_lap' => [],
         ];
 
-        // AI entries with context-aware tactics
-        foreach ($this->aiGridPool as $index => $ai) {
-            $aiPerf = max(40, min(95, $ai['base_ovr'] + random_int(-3, 3)));
-
-            // AI Strategy Selection:
-            if ($weather === 'wet') {
-                // 85% pick wet compound in rain, 15% gamble on medium/soft
-                $aiCompound = (random_int(1, 100) <= 85) ? 'wet' : (random_int(1, 2) === 1 ? 'medium' : 'soft');
-            } else {
-                // In dry: 45% medium, 35% soft, 20% hard
-                $roll = random_int(1, 100);
-                $aiCompound = $roll <= 45 ? 'medium' : ($roll <= 80 ? 'soft' : 'hard');
-            }
-
-            // AI Driving Mode: 60% balanced, 25% push, 15% conserve
-            $modeRoll = random_int(1, 100);
-            $aiMode = $modeRoll <= 60 ? 'balanced' : ($modeRoll <= 85 ? 'push' : 'conserve');
-
+        // Player Car 2 entry (if two-car team)
+        if ($isTwoCar) {
+            $playerPerf2 = $this->calculatePerformanceIndex($playerCar2, $playerDriver2, $trackType, $weather);
             $competitors[] = [
-                'id' => 'ai_'.($index + 1),
-                'is_player' => false,
-                'team_name' => $ai['team'],
-                'driver_name' => $ai['driver'],
-                'car_name' => $ai['car'],
-                'perf_index' => $aiPerf,
-                'consistency' => max(40, $aiPerf - random_int(0, 8)),
-                'reliability' => max(50, $aiPerf + random_int(-5, 5)),
-                'racecraft' => max(40, $aiPerf + random_int(-4, 4)),
-                'tire_compound' => $aiCompound,
-                'driving_mode' => $aiMode,
+                'id' => 'player_2',
+                'is_player' => true,
+                'car_slot' => 2,
+                'team_name' => $playerTeam->name,
+                'driver_name' => $playerDriver2->name,
+                'car_name' => $playerCar2->name,
+                'car_id' => $playerCar2->id,
+                'driver_id' => $playerDriver2->id,
+                'perf_index' => $playerPerf2,
+                'consistency' => $playerDriver2->consistency,
+                'reliability' => $playerCar2->reliability,
+                'racecraft' => $playerDriver2->racecraft,
+                'tire_compound' => $tireCompound2,
+                'driving_mode' => $drivingMode2,
                 'total_time' => 0.0,
                 'lap_times' => [],
                 'best_lap' => 999.0,
@@ -119,12 +195,76 @@ class RaceSimulationService
             ];
         }
 
+        // AI entries: If two-car mode, add both drivers per team (18 AI cars). If legacy 1-car, add driver 1 (9 AI cars).
+        foreach ($this->aiGridPool as $index => $ai) {
+            // Driver 1 for AI Team
+            $aiPerf1 = max(40, min(95, $ai['ovr1'] + random_int(-3, 3)));
+            $aiCompound1 = $this->selectAiTire($weather);
+            $aiMode1 = $this->selectAiMode();
+
+            $competitors[] = [
+                'id' => 'ai_'.($index + 1).'_1',
+                'is_player' => false,
+                'car_slot' => 1,
+                'team_name' => $ai['team'],
+                'driver_name' => $ai['driver1'],
+                'car_name' => $ai['car1'],
+                'car_id' => null,
+                'driver_id' => null,
+                'perf_index' => $aiPerf1,
+                'consistency' => max(40, $aiPerf1 - random_int(0, 8)),
+                'reliability' => max(50, $aiPerf1 + random_int(-5, 5)),
+                'racecraft' => max(40, $aiPerf1 + random_int(-4, 4)),
+                'tire_compound' => $aiCompound1,
+                'driving_mode' => $aiMode1,
+                'total_time' => 0.0,
+                'lap_times' => [],
+                'best_lap' => 999.0,
+                'best_lap_num' => 1,
+                'positions_by_lap' => [],
+            ];
+
+            if ($isTwoCar) {
+                // Driver 2 for AI Team
+                $aiPerf2 = max(40, min(95, $ai['ovr2'] + random_int(-3, 3)));
+                $aiCompound2 = $this->selectAiTire($weather);
+                $aiMode2 = $this->selectAiMode();
+
+                $competitors[] = [
+                    'id' => 'ai_'.($index + 1).'_2',
+                    'is_player' => false,
+                    'car_slot' => 2,
+                    'team_name' => $ai['team'],
+                    'driver_name' => $ai['driver2'],
+                    'car_name' => $ai['car2'],
+                    'car_id' => null,
+                    'driver_id' => null,
+                    'perf_index' => $aiPerf2,
+                    'consistency' => max(40, $aiPerf2 - random_int(0, 8)),
+                    'reliability' => max(50, $aiPerf2 + random_int(-5, 5)),
+                    'racecraft' => max(40, $aiPerf2 + random_int(-4, 4)),
+                    'tire_compound' => $aiCompound2,
+                    'driving_mode' => $aiMode2,
+                    'total_time' => 0.0,
+                    'lap_times' => [],
+                    'best_lap' => 999.0,
+                    'best_lap_num' => 1,
+                    'positions_by_lap' => [],
+                ];
+            }
+        }
+
         // 3. Lap-by-Lap Simulation Loop
         $lapEvents = [];
+        $totalGridCount = count($competitors);
+        $strategySummary = $isTwoCar
+            ? "[Car #1: {$playerDriver->name} - ".strtoupper($tireCompound).'/'.strtoupper($drivingMode)." | Car #2: {$playerDriver2->name} - ".strtoupper($tireCompound2).'/'.strtoupper($drivingMode2).']'
+            : '[Strategy: '.strtoupper($tireCompound).' / '.strtoupper($drivingMode).']';
+
         $lapEvents[] = [
             'lap' => 1,
             'type' => 'start',
-            'message' => "🟢 LIGHTS OUT! The grid roars into Turn 1 under {$weather} conditions at {$race->name}. [Strategy: ".strtoupper($tireCompound).' / '.strtoupper($drivingMode).']',
+            'message' => "🟢 LIGHTS OUT! {$totalGridCount} cars roar into Turn 1 under {$weather} conditions at {$race->name}. {$strategySummary}",
         ];
 
         for ($lap = 1; $lap <= $totalLaps; $lap++) {
@@ -166,7 +306,6 @@ class RaceSimulationService
                 }
 
                 if ($cCompound === 'soft') {
-                    // Soft tires: -0.85s advantage early, degrading after 35% distance
                     $compoundPaceDelta = -0.85;
                     $wearThreshold = (int) floor($totalLaps * 0.35);
                     if ($lap > $wearThreshold) {
@@ -174,7 +313,6 @@ class RaceSimulationService
                         $degradationDelta = ($excessLaps * 0.18) * $modeWearMultiplier;
                     }
                 } elseif ($cCompound === 'medium') {
-                    // Medium tires: Balanced pace (0.0s), moderate degradation after 60% distance
                     $compoundPaceDelta = 0.0;
                     $wearThreshold = (int) floor($totalLaps * 0.60);
                     if ($lap > $wearThreshold) {
@@ -182,7 +320,6 @@ class RaceSimulationService
                         $degradationDelta = ($excessLaps * 0.08) * $modeWearMultiplier;
                     }
                 } elseif ($cCompound === 'hard') {
-                    // Hard tires: +0.50s initial deficit, ultra durable with near-zero degradation
                     $compoundPaceDelta = 0.50;
                     $degradationDelta = ($lap / $totalLaps) * 0.03 * $modeWearMultiplier;
                 }
@@ -196,7 +333,6 @@ class RaceSimulationService
 
                 // Reliability & lock-up check
                 $effectiveReliability = max(20, min(98, $c['reliability'] + $relBuffer));
-                // If soft tires are heavily worn or mismatch occurs, incident risk rises
                 if ($cCompound === 'soft' && $lap > ($totalLaps * 0.65)) {
                     $effectiveReliability -= 10;
                 }
@@ -208,29 +344,30 @@ class RaceSimulationService
                 if (random_int(1, 100) > $effectiveReliability) {
                     $incidentDelta = random_int(8, 25) / 10.0; // 0.8s - 2.5s stumble
                     if ($c['is_player'] && $incidentDelta > 1.2) {
+                        $carTag = isset($c['car_slot']) ? " [Car #{$c['car_slot']}]" : '';
                         if ($weatherMismatchPenalty > 0 && $weather === 'wet') {
                             $lapEvents[] = [
                                 'lap' => $lap,
                                 'type' => 'telemetry_alert',
-                                'message' => "⚠️ Lap {$lap}: Severe aquaplaning on slick compound! {$c['driver_name']} slides off line, losing ".number_format($incidentDelta, 2).'s.',
+                                'message' => "⚠️ Lap {$lap}:{$carTag} Severe aquaplaning on slick compound! {$c['driver_name']} slides off line, losing ".number_format($incidentDelta, 2).'s.',
                             ];
                         } elseif ($cMode === 'push') {
                             $lapEvents[] = [
                                 'lap' => $lap,
                                 'type' => 'telemetry_alert',
-                                'message' => "⚠️ Lap {$lap}: [PUSH MODE] Aggressive braking causes front tire lock-up into the apex for {$c['driver_name']}, losing ".number_format($incidentDelta, 2).'s.',
+                                'message' => "⚠️ Lap {$lap}:{$carTag} [PUSH MODE] Aggressive braking causes front tire lock-up for {$c['driver_name']}, losing ".number_format($incidentDelta, 2).'s.',
                             ];
                         } elseif ($cCompound === 'soft' && $lap > ($totalLaps * 0.5)) {
                             $lapEvents[] = [
                                 'lap' => $lap,
                                 'type' => 'telemetry_alert',
-                                'message' => "⚠️ Lap {$lap}: Soft tire cliff reached! {$c['driver_name']} struggles with severe rear degradation, losing ".number_format($incidentDelta, 2).'s.',
+                                'message' => "⚠️ Lap {$lap}:{$carTag} Soft tire degradation cliff! {$c['driver_name']} struggles with rear grip, losing ".number_format($incidentDelta, 2).'s.',
                             ];
                         } else {
                             $lapEvents[] = [
                                 'lap' => $lap,
                                 'type' => 'telemetry_alert',
-                                'message' => "⚠️ Lap {$lap}: {$c['driver_name']} experiences sudden vehicle instability, losing ".number_format($incidentDelta, 2).'s.',
+                                'message' => "⚠️ Lap {$lap}:{$carTag} {$c['driver_name']} experiences vehicle instability, losing ".number_format($incidentDelta, 2).'s.',
                             ];
                         }
                     }
@@ -261,17 +398,19 @@ class RaceSimulationService
                 if ($c['is_player'] && $currentPos < $prevPos && $lap > 1) {
                     $rivalAhead = $competitors[$posIndex + 1]['driver_name'] ?? 'rival';
                     $modeTag = ($c['driving_mode'] === 'push') ? ' [PUSH ATTACK]' : '';
+                    $carSlotTag = isset($c['car_slot']) ? " [Car #{$c['car_slot']}]" : '';
                     $lapEvents[] = [
                         'lap' => $lap,
                         'type' => 'overtake',
-                        'message' => "⚡ Lap {$lap}:{$modeTag} {$c['driver_name']} executes an aggressive maneuver to pass {$rivalAhead} for P{$currentPos}!",
+                        'message' => "⚡ Lap {$lap}:{$carSlotTag}{$modeTag} {$c['driver_name']} executes an overtake on {$rivalAhead} for P{$currentPos}!",
                     ];
                 } elseif ($c['is_player'] && $currentPos > $prevPos && $lap > 1) {
                     $rivalBehind = $competitors[$posIndex - 1]['driver_name'] ?? 'rival';
+                    $carSlotTag = isset($c['car_slot']) ? " [Car #{$c['car_slot']}]" : '';
                     $lapEvents[] = [
                         'lap' => $lap,
                         'type' => 'defense_loss',
-                        'message' => "📉 Lap {$lap}: {$c['driver_name']} comes under intense pressure and yields P".($currentPos - 1)." to {$rivalBehind}.",
+                        'message' => "📉 Lap {$lap}:{$carSlotTag} {$c['driver_name']} yields P".($currentPos - 1)." to {$rivalBehind}.",
                     ];
                 }
             }
@@ -279,17 +418,14 @@ class RaceSimulationService
 
             // Mid-race pit-wall strategy radio event
             if ($lap === (int) floor($totalLaps / 2)) {
-                $strategyNote = match ($tireCompound) {
-                    'soft' => 'Soft tire degradation escalating as expected. Manage thermal temps.',
-                    'hard' => 'Hard compound operating in peak performance window. Pace advantage stabilizing.',
-                    'wet' => ($weather === 'wet' ? 'Wet compound clearing surface water effectively. Grip levels solid.' : 'Wet compound overheating rapidly on dry tarmac!'),
-                    default => 'Medium tire wear nominal, balanced pace delta on target.',
-                };
+                $radioMsg = $isTwoCar
+                    ? "📻 Lap {$lap} Pit-Wall Radio: Car #1 ({$playerDriver->name}) on ".strtoupper($tireCompound).', Car #2 ('.($playerDriver2->name ?? '').') on '.strtoupper($tireCompound2).'. Monitoring telemetry and tire thermals.'
+                    : '📻 Lap {$lap} Pit-Wall Radio: [Strategy: '.strtoupper($tireCompound).' / '.strtoupper($drivingMode).'] Tire thermals and pace nominal.';
 
                 $lapEvents[] = [
                     'lap' => $lap,
                     'type' => 'pit_radio',
-                    'message' => "📻 Lap {$lap} Pit-Wall Radio: [Strategy: ".strtoupper($tireCompound).' / '.strtoupper($drivingMode)."] {$strategyNote}",
+                    'message' => $radioMsg,
                 ];
             }
         }
@@ -302,7 +438,8 @@ class RaceSimulationService
         $bestLapOverallTime = 999.0;
 
         $standings = [];
-        $playerResult = null;
+        $playerResult1 = null;
+        $playerResult2 = null;
 
         foreach ($competitors as $rank => $c) {
             $pos = $rank + 1;
@@ -323,9 +460,12 @@ class RaceSimulationService
             $standingEntry = [
                 'position' => $pos,
                 'is_player' => $c['is_player'],
+                'car_slot' => $c['car_slot'] ?? null,
                 'driver_name' => $c['driver_name'],
                 'team_name' => $c['team_name'],
                 'car_name' => $c['car_name'],
+                'car_id' => $c['car_id'] ?? null,
+                'driver_id' => $c['driver_id'] ?? null,
                 'tire_compound' => $c['tire_compound'],
                 'driving_mode' => $c['driving_mode'],
                 'total_time' => $formattedTotalTime,
@@ -338,14 +478,22 @@ class RaceSimulationService
             $standings[] = $standingEntry;
 
             if ($c['is_player']) {
-                $playerResult = $standingEntry;
+                if (($c['car_slot'] ?? 1) === 1) {
+                    $playerResult1 = $standingEntry;
+                } else {
+                    $playerResult2 = $standingEntry;
+                }
             }
         }
+
+        $summaryMsg = $isTwoCar
+            ? "🏁 CHECKERED FLAG! Grand Prix complete. {$standings[0]['driver_name']} takes victory. Car #1 ({$playerResult1['driver_name']}) finishes P{$playerResult1['position']} | Car #2 ({$playerResult2['driver_name']}) finishes P{$playerResult2['position']}."
+            : "🏁 CHECKERED FLAG! Grand Prix complete. {$standings[0]['driver_name']} takes victory. {$playerResult1['driver_name']} finishes P{$playerResult1['position']}.";
 
         $lapEvents[] = [
             'lap' => $totalLaps,
             'type' => 'finish',
-            'message' => "🏁 CHECKERED FLAG! Grand Prix complete. {$standings[0]['driver_name']} takes victory. {$playerResult['driver_name']} finishes P{$playerResult['position']}.",
+            'message' => $summaryMsg,
         ];
 
         return [
@@ -365,6 +513,23 @@ class RaceSimulationService
                 'car_name' => $playerCar->name,
                 'driver_name' => $playerDriver->name,
             ],
+            'is_two_car' => $isTwoCar,
+            'car1' => [
+                'car_id' => $playerCar->id,
+                'driver_id' => $playerDriver->id,
+                'car_name' => $playerCar->name,
+                'driver_name' => $playerDriver->name,
+                'tire_compound' => $tireCompound,
+                'driving_mode' => $drivingMode,
+            ],
+            'car2' => $isTwoCar ? [
+                'car_id' => $playerCar2->id,
+                'driver_id' => $playerDriver2->id,
+                'car_name' => $playerCar2->name,
+                'driver_name' => $playerDriver2->name,
+                'tire_compound' => $tireCompound2,
+                'driving_mode' => $drivingMode2,
+            ] : null,
             'tactics' => [
                 'tire_compound' => $tireCompound,
                 'driving_mode' => $drivingMode,
@@ -372,10 +537,36 @@ class RaceSimulationService
             'tire_compound' => $tireCompound,
             'driving_mode' => $drivingMode,
             'standings' => $standings,
-            'player_result' => $playerResult,
+            'player_result' => $playerResult1, // Backward-compatible single-car accessor
+            'player_result_1' => $playerResult1,
+            'player_result_2' => $playerResult2,
             'fastest_lap_overall' => $fastestOverall,
             'lap_events' => $lapEvents,
         ];
+    }
+
+    /**
+     * Helper to select tactical AI tire compound.
+     */
+    protected function selectAiTire(string $weather): string
+    {
+        if ($weather === 'wet') {
+            return (random_int(1, 100) <= 85) ? 'wet' : (random_int(1, 2) === 1 ? 'medium' : 'soft');
+        }
+
+        $roll = random_int(1, 100);
+
+        return $roll <= 45 ? 'medium' : ($roll <= 80 ? 'soft' : 'hard');
+    }
+
+    /**
+     * Helper to select tactical AI driving mode.
+     */
+    protected function selectAiMode(): string
+    {
+        $modeRoll = random_int(1, 100);
+
+        return $modeRoll <= 60 ? 'balanced' : ($modeRoll <= 85 ? 'push' : 'conserve');
     }
 
     /**

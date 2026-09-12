@@ -91,18 +91,18 @@
                     @auth
                         @if(auth()->user()->team)
                             <!-- Unified Team Telemetry HUD Pill -->
-                            <div class="hidden xl:flex items-center gap-2.5 2xl:gap-3 bg-zinc-900/90 border border-zinc-800 rounded-full px-3.5 py-1.5 shadow-inner text-xs">
-                                <div class="flex items-center gap-1.5 font-semibold text-zinc-200 whitespace-nowrap">
+                            <div class="flex items-center gap-2 sm:gap-2.5 bg-zinc-900/90 border border-zinc-800 rounded-full px-3 py-1 sm:px-3.5 sm:py-1.5 shadow-inner text-xs">
+                                <div class="hidden md:flex items-center gap-1.5 font-semibold text-zinc-200 whitespace-nowrap">
                                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                     <span class="font-mono">{{ auth()->user()->team->name }}</span>
                                 </div>
-                                <div class="h-3 w-px bg-zinc-800"></div>
+                                <div class="hidden md:block h-3 w-px bg-zinc-800"></div>
                                 <div class="font-telemetry font-bold text-amber-400 whitespace-nowrap">
-                                    {{ number_format(auth()->user()->team->money) }} <span class="text-[10px] text-zinc-500 font-normal">CR</span>
+                                    {{ number_format(auth()->user()->team->fresh()->money) }} <span class="text-[10px] text-zinc-500 font-normal">CR</span>
                                 </div>
                                 <div class="h-3 w-px bg-zinc-800"></div>
                                 <div class="font-telemetry font-bold text-cyan-400 flex items-center gap-1 whitespace-nowrap">
-                                    <span class="text-[10px] text-zinc-500 font-normal">REP</span> {{ auth()->user()->team->reputation }}
+                                    <span class="text-[10px] text-zinc-500 font-normal">REP</span> {{ auth()->user()->team->fresh()->reputation }}
                                 </div>
                             </div>
 
