@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Grand Prix Calendar - ' . $team->name)
+@section('title', 'Grand Prix Calendar - Season ' . $currentSeason . ' - ' . $team->name)
 
 @section('content')
 <div class="space-y-6">
@@ -14,31 +14,87 @@
                     <a href="{{ route('dashboard') }}" class="hover:text-red-400 transition-colors">PADDOCK</a>
                     <span>/</span>
                     <span class="text-red-400 font-bold uppercase">GRAND PRIX CALENDAR</span>
+                    <span>/</span>
+                    <span class="text-amber-400 font-bold uppercase">SEASON {{ $currentSeason }}</span>
                 </div>
-                <h1 class="text-2xl sm:text-3xl font-black text-white uppercase font-mono tracking-tight">
-                    Official Championship Schedule
+                <h1 class="text-2xl sm:text-3xl font-black text-white uppercase font-mono tracking-tight flex items-center gap-3">
+                    <span>Championship Schedule</span>
+                    <span class="text-xs font-mono font-bold bg-orange-950/80 text-orange-400 border border-orange-500/40 px-2.5 py-1 rounded">
+                        SEASON {{ $currentSeason }}
+                    </span>
                 </h1>
                 <p class="text-xs text-zinc-400 mt-1 font-mono">
-                    Select a Grand Prix circuit, review track characteristics, and prepare your constructor grid entry.
+                    Official {{ $races->count() }}-round FIA championship calendar. Complete all Grand Prix rounds to conclude Season {{ $currentSeason }}.
                 </p>
             </div>
 
             <div class="flex items-center gap-3">
-                <a href="{{ route('races.history') }}" class="px-4 py-2.5 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 hover:border-red-500/50 text-zinc-300 hover:text-white text-xs font-mono font-bold uppercase transition flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                    <span>Race Archives &rarr;</span>
+                <a href="{{ route('standings') }}" class="px-3.5 py-2 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-500/50 text-amber-400 hover:text-amber-300 text-xs font-mono font-bold uppercase transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    <span>Standings &rarr;</span>
                 </a>
 
-                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-4 py-2 text-right">
-                    <div class="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">SEASON STAGES</div>
-                    <div class="text-xl font-mono font-black text-white">
-                        {{ $races->count() }} <span class="text-xs text-zinc-500 font-normal">ROUNDS</span>
+                <a href="{{ route('races.history') }}" class="px-3.5 py-2 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 hover:border-red-500/50 text-zinc-300 hover:text-white text-xs font-mono font-bold uppercase transition flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span>Archives</span>
+                </a>
+
+                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-4 py-2 text-right font-mono">
+                    <div class="text-[10px] text-zinc-400 uppercase tracking-wider">SEASON PROGRESS</div>
+                    <div class="text-base font-black text-white">
+                        <span class="text-orange-400">{{ $teamResults->count() }}</span> / {{ $races->count() }} <span class="text-xs text-zinc-500 font-normal">DONE</span>
                     </div>
                 </div>
             </div>
 
         </div>
     </div>
+
+    <!-- Season Finale Call-to-Action Banner (Shown when all rounds completed) -->
+    @if($isSeasonCompleted)
+        <div class="bg-gradient-to-r from-amber-950/60 via-zinc-900 to-zinc-950 border-2 border-amber-500/60 rounded-lg p-6 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span>
+                        <span class="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 bg-amber-950/80 px-2.5 py-0.5 rounded border border-amber-500/30">
+                            SEASON {{ $currentSeason }} FINALE COMPLETED
+                        </span>
+                    </div>
+                    <h2 class="text-xl font-black text-white uppercase font-mono tracking-tight">
+                        All Grand Prix Rounds Concluded for Season {{ $currentSeason }}!
+                    </h2>
+                    <p class="text-xs text-zinc-300 font-mono leading-relaxed max-w-2xl">
+                        Tim Anda telah menyelesaikan seluruh seri kalender balap. Selesaikan evaluasi klasemen akhir dan mulailah musim kompetisi baru di <strong class="text-amber-400">Season {{ $currentSeason + 1 }}</strong> dengan membawa armada mobil & pembalap yang sudah Anda kembangkan!
+                    </p>
+                    <div class="flex flex-wrap items-center gap-4 text-xs font-mono pt-1 text-zinc-400">
+                        <div>Constructor Rank: <span class="text-white font-bold">P{{ $seasonOverview['player_constructor_rank'] }}</span> ({{ $seasonOverview['player_constructor_points'] }} PTS)</div>
+                        <div>&bull;</div>
+                        <div>Season Finale Bonus: <span class="text-amber-400 font-bold font-telemetry">+Bonus CR & REP</span></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+                    <a href="{{ route('standings') }}" class="w-full sm:w-auto px-4 py-3 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs font-mono font-bold uppercase transition text-center shadow">
+                        Review Final Standings
+                    </a>
+
+                    <form method="POST" action="{{ route('season.advance') }}" class="w-full sm:w-auto">
+                        @csrf
+                        <button
+                            type="submit"
+                            class="w-full sm:w-auto px-6 py-3 rounded bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 hover:from-amber-400 hover:to-red-500 text-black font-mono font-black text-xs uppercase tracking-wider transition shadow-lg shadow-orange-950/50 flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                            <span>🏁 ADVANCE TO SEASON {{ $currentSeason + 1 }}</span>
+                            <span>&rarr;</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Lineup Telemetry Status Banner -->
     <div class="bg-zinc-900/90 border border-zinc-800 rounded p-5 shadow-lg">
@@ -95,7 +151,7 @@
         <div class="flex items-center justify-between">
             <h2 class="text-sm font-mono font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
                 <span class="w-2 h-2 rounded bg-red-500"></span>
-                <span>Grand Prix Championship Rounds</span>
+                <span>Season {{ $currentSeason }} Grand Prix Rounds</span>
             </h2>
             <span class="text-xs font-mono text-zinc-400">{{ $races->count() }} Circuits Open</span>
         </div>
@@ -172,3 +228,4 @@
     </div>
 </div>
 @endsection
+

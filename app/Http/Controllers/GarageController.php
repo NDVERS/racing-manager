@@ -32,6 +32,31 @@ class GarageController extends Controller
     }
 
     /**
+     * Display the official constructor chassis showroom & dealership catalog.
+     */
+    public function dealership(Request $request): View
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        /** @var Team $team */
+        $team = $user->team;
+
+        $templates = Car::whereNull('team_id')
+            ->orderBy('purchase_price', 'asc')
+            ->get();
+
+        $activeCar = $team->activeCar();
+        $ownedCarNames = $team->cars()->pluck('name')->toArray();
+
+        return view('garage.dealership', [
+            'team' => $team,
+            'templates' => $templates,
+            'activeCar' => $activeCar,
+            'ownedCarNames' => $ownedCarNames,
+        ]);
+    }
+
+    /**
      * Display the technical inspection sheet of a specific car.
      */
     public function show(Request $request, Car $car): View
@@ -181,6 +206,64 @@ class GarageController extends Controller
     }
 
     /**
+     * Purchase and commission a new constructor chassis from the showroom.
+     */
+    public function buy(Request $request, Car $car): RedirectResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        /** @var Team $team */
+        $team = $user->team;
+
+        // Validation 1: Sasis template valid (team_id MUST be null)
+        if ($car->team_id !== null) {
+            return redirect()->route('garage.dealership')
+                ->with('error', "{$car->name} is a privately commissioned chassis and cannot be acquired from the dealership.");
+        }
+
+        // Validation 2: Sasis model already owned in fleet
+        if ($team->cars()->where('name', $car->name)->exists()) {
+            return redirect()->route('garage.dealership')
+                ->with('warning', "Your constructor fleet already operates a {$car->name} chassis in the garage.");
+        }
+
+        $purchasePrice = (int) ($car->purchase_price ?? 30000);
+
+        // Validation 3: Saldo mencukupi
+        if ($team->credits < $purchasePrice) {
+            return redirect()->route('garage.dealership')
+                ->with('error', 'Insufficient credits in team treasury to acquire '.$car->name.'. Required: '.number_format($purchasePrice).' CR, Available: '.number_format($team->credits).' CR.');
+        }
+
+        DB::transaction(function () use ($team, $car, $purchasePrice) {
+            // 1. Potong saldo tim
+            $team->decrement('money', $purchasePrice);
+            $team->refresh();
+
+            // 2. Catat transaksi di tabel transactions
+            Transaction::create([
+                'team_id' => $team->id,
+                'type' => 'expense',
+                'amount' => -$purchasePrice,
+                'balance_after' => $team->credits,
+                'description' => "Chassis Acquisition: {$car->name}",
+                'reference_id' => $car->id,
+                'reference_type' => Car::class,
+            ]);
+
+            // 3. Replicate template car menjadi mobil baru milik tim
+            $newCar = $car->replicate();
+            $newCar->team_id = $team->id;
+            $newCar->is_active = ($team->cars()->count() === 0);
+            $newCar->level = 1;
+            $newCar->save();
+        });
+
+        return redirect()->route('garage.index')
+            ->with('success', "Congratulations! {$car->name} chassis has been commissioned to your constructor fleet for ".number_format($purchasePrice).' CR.');
+    }
+
+    /**
      * Set a car as the team's active race vehicle.
      */
     public function setActive(Request $request, Car $car): RedirectResponse
@@ -195,9 +278,10 @@ class GarageController extends Controller
             abort(404, 'Car not found in team garage.');
         }
 
-        // Deactivate all other cars and activate this one
-        $team->cars()->update(['is_active' => false]);
-        $car->update(['is_active' => true]);
+        DB::transaction(function () use ($team, $car) {
+            $team->cars()->update(['is_active' => false]);
+            $car->update(['is_active' => true]);
+        });
 
         return redirect()->back()
             ->with('success', "{$car->name} is now designated as your active primary race car.");

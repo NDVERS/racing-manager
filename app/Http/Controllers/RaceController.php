@@ -8,6 +8,7 @@ use App\Models\Sponsor;
 use App\Models\Team;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\ChampionshipService;
 use App\Services\RaceSimulationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,19 +21,25 @@ class RaceController extends Controller
     /**
      * Display the Grand Prix championship race calendar.
      */
-    public function index(Request $request): View
+    public function index(Request $request, ChampionshipService $championshipService): View
     {
         /** @var User $user */
         $user = Auth::user();
         /** @var Team $team */
         $team = $user->team;
 
+        $currentSeason = max(1, (int) $team->current_season);
         $races = Race::all();
-        $teamResults = RaceResult::where('team_id', $team->id)->get()->keyBy('race_id');
+        $teamResults = RaceResult::where('team_id', $team->id)
+            ->where('season', $currentSeason)
+            ->get()
+            ->keyBy('race_id');
 
         $activeCar = $team->activeCar();
         $primaryDriver = $team->primaryDriver();
         $isRaceReady = ($activeCar !== null && $primaryDriver !== null);
+        $isSeasonCompleted = $team->isCurrentSeasonCompleted();
+        $seasonOverview = $championshipService->getSeasonOverview($team, $currentSeason);
 
         return view('races.index', [
             'team' => $team,
@@ -41,6 +48,9 @@ class RaceController extends Controller
             'activeCar' => $activeCar,
             'primaryDriver' => $primaryDriver,
             'isRaceReady' => $isRaceReady,
+            'currentSeason' => $currentSeason,
+            'isSeasonCompleted' => $isSeasonCompleted,
+            'seasonOverview' => $seasonOverview,
         ]);
     }
 
@@ -112,7 +122,16 @@ class RaceController extends Controller
 
         $hasEnoughFunds = ($team->money >= $race->entry_fee);
 
+        $currentSeason = max(1, (int) $team->current_season);
+
         $latestResult = RaceResult::where('race_id', $race->id)
+            ->where('team_id', $team->id)
+            ->where('season', $currentSeason)
+            ->with(['car', 'driver'])
+            ->latest()
+            ->first();
+
+        $pastResult = RaceResult::where('race_id', $race->id)
             ->where('team_id', $team->id)
             ->with(['car', 'driver'])
             ->latest()
@@ -133,7 +152,8 @@ class RaceController extends Controller
             'hasEnoughFunds' => $hasEnoughFunds,
             'isReady' => $isReady,
             'latestResult' => $latestResult,
-            'pastResult' => $latestResult,
+            'pastResult' => $pastResult,
+            'currentSeason' => $currentSeason,
         ]);
     }
 
@@ -320,6 +340,7 @@ class RaceController extends Controller
                 'team_id' => $team->id,
                 'car_id' => $activeCar->id,
                 'driver_id' => $primaryDriver->id,
+                'season' => max(1, (int) $team->current_season),
                 'position' => $playerPosition,
                 'race_time' => $sim['player_result']['total_time'],
                 'prize_money' => $prizeMoney,
@@ -444,5 +465,71 @@ class RaceController extends Controller
             'simulation' => $raceResult->simulation_log,
             'netProfit' => $netProfit,
         ]);
+    }
+
+    /**
+     * Advance the team to the next championship season after completing all Grand Prix rounds.
+     */
+    public function advanceSeason(Request $request, ChampionshipService $championshipService): RedirectResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        /** @var Team $team */
+        $team = $user->team;
+
+        $currentSeason = max(1, (int) $team->current_season);
+
+        if (! $team->isCurrentSeasonCompleted()) {
+            return redirect()->route('races.index')
+                ->with('warning', "You must complete all scheduled Grand Prix races in Season {$currentSeason} before advancing to the next season.");
+        }
+
+        $settlement = DB::transaction(function () use ($team, $currentSeason, $championshipService) {
+            $overview = $championshipService->getSeasonOverview($team, $currentSeason);
+            $playerRank = $overview['player_constructor_rank'] ?? 10;
+
+            // Determine Season Finale Prize based on Constructors Championship final rank
+            if ($playerRank === 1) {
+                $seasonPrizeMoney = 30000;
+                $seasonPrizeReputation = 1200;
+            } elseif ($playerRank <= 3) {
+                $seasonPrizeMoney = 20000;
+                $seasonPrizeReputation = 800;
+            } elseif ($playerRank <= 6) {
+                $seasonPrizeMoney = 12000;
+                $seasonPrizeReputation = 500;
+            } else {
+                $seasonPrizeMoney = 8000;
+                $seasonPrizeReputation = 300;
+            }
+
+            // Award financial & reputation payouts
+            $team->increment('money', $seasonPrizeMoney);
+            $team->increment('reputation', $seasonPrizeReputation);
+            $team->increment('current_season', 1);
+            $team->refresh();
+
+            // Record transaction
+            Transaction::create([
+                'team_id' => $team->id,
+                'type' => 'income',
+                'amount' => $seasonPrizeMoney,
+                'balance_after' => $team->money,
+                'description' => "Season {$currentSeason} World Championship Finale Bonus (Constructor P{$playerRank})",
+                'reference_id' => $currentSeason,
+                'reference_type' => Team::class,
+            ]);
+
+            return [
+                'old_season' => $currentSeason,
+                'new_season' => $team->current_season,
+                'player_rank' => $playerRank,
+                'prize_money' => $seasonPrizeMoney,
+                'prize_rep' => $seasonPrizeReputation,
+            ];
+        });
+
+        return redirect()->route('races.index')
+            ->with('success', "🏁 Season {$settlement['old_season']} concluded! Finished P{$settlement['player_rank']} in Constructors' Championship. Awarded +".number_format($settlement['prize_money'])." CR & +{$settlement['prize_rep']} REP. Welcome to Season {$settlement['new_season']}!");
     }
 }

@@ -1,31 +1,55 @@
 @extends('layouts.app')
 
-@section('title', 'Season Championship Standings - ' . $team->name)
+@section('title', 'Season ' . $selectedSeason . ' Championship Standings - ' . $team->name)
 
 @section('content')
-<div class="space-y-6" x-data="{ activeTab: 'constructors' }">
+<div class="space-y-6">
     <!-- Header / Breadcrumb Bar -->
     <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-xl relative overflow-hidden">
         <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-red-600"></div>
 
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
                 <div class="flex items-center gap-2 mb-1 text-xs font-mono text-zinc-400">
                     <a href="{{ route('dashboard') }}" class="hover:text-amber-400 transition-colors">PADDOCK</a>
                     <span>/</span>
-                    <span class="text-amber-400 font-bold uppercase">CHAMPIONSHIP STANDINGS</span>
+                    <a href="{{ route('standings') }}" class="hover:text-amber-400 transition-colors uppercase">CHAMPIONSHIP STANDINGS</a>
+                    <span>/</span>
+                    <span class="text-amber-400 font-bold uppercase">SEASON {{ $selectedSeason }}</span>
                 </div>
-                <h1 class="text-2xl sm:text-3xl font-black text-white uppercase font-mono tracking-tight">
-                    Season Championship Standings
+                <h1 class="text-2xl sm:text-3xl font-black text-white uppercase font-mono tracking-tight flex items-center gap-3">
+                    <span>Season Championship Standings</span>
+                    @if($selectedSeason < $team->current_season)
+                        <span class="text-xs font-mono font-bold bg-zinc-800 text-zinc-300 border border-zinc-700 px-2.5 py-1 rounded">
+                            SEASON {{ $selectedSeason }} ARCHIVE
+                        </span>
+                    @else
+                        <span class="text-xs font-mono font-bold bg-amber-950/80 text-amber-400 border border-amber-500/40 px-2.5 py-1 rounded">
+                            CURRENT // SEASON {{ $selectedSeason }}
+                        </span>
+                    @endif
                 </h1>
                 <p class="text-xs text-zinc-400 mt-1 font-mono">
-                    Official FIA Drivers' & Constructors' World Championship points classification table.
+                    Official FIA Drivers' & Constructors' World Championship points classification table for Season {{ $selectedSeason }}.
                 </p>
             </div>
 
-            <!-- Season Round Tracker -->
-            <div class="flex items-center gap-3">
-                <div class="bg-zinc-950/80 border border-zinc-800 px-4 py-2.5 rounded text-right font-mono">
+            <!-- Season Selector Dropdown / Pills & Calendar Progress -->
+            <div class="flex flex-wrap items-center gap-3 font-mono">
+                <!-- Season Switcher Pills -->
+                <div class="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 p-1 rounded">
+                    <span class="text-[10px] text-zinc-500 uppercase px-2 font-bold">Season:</span>
+                    @foreach($availableSeasons as $s)
+                        <a
+                            href="{{ route('standings', ['season' => $s]) }}"
+                            class="px-3 py-1.5 rounded text-xs font-bold transition-all {{ $s === $selectedSeason ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900' }}"
+                        >
+                            S{{ $s }}
+                        </a>
+                    @endforeach
+                </div>
+
+                <div class="bg-zinc-950/80 border border-zinc-800 px-4 py-2.5 rounded text-right">
                     <div class="text-[10px] text-zinc-500 uppercase">Season Calendar Progress</div>
                     <div class="text-sm font-bold text-white mt-0.5">
                         <span class="text-orange-400 font-black">{{ $season['completed_rounds'] }}</span> / {{ $season['total_rounds'] }} Rounds Done
@@ -34,6 +58,32 @@
             </div>
         </div>
     </div>
+
+    <!-- Season Finale Call-to-Action Banner (Shown on current completed season) -->
+    @if($season['is_current_season'] && $season['is_completed'])
+        <div class="bg-gradient-to-r from-amber-950/60 via-zinc-900 to-zinc-950 border-2 border-amber-500/60 rounded-lg p-5 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+                    <span class="text-xs font-mono font-bold uppercase tracking-widest text-amber-400">SEASON {{ $selectedSeason }} COMPLETE</span>
+                </div>
+                <h3 class="text-base font-bold text-white font-mono mt-1">Ready for Season {{ $selectedSeason + 1 }}?</h3>
+                <p class="text-xs text-zinc-300 font-mono mt-0.5">
+                    Advance to the next championship year to claim season finale prizes and start a new 5-round campaign!
+                </p>
+            </div>
+            <form method="POST" action="{{ route('season.advance') }}">
+                @csrf
+                <button
+                    type="submit"
+                    class="px-5 py-2.5 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-mono font-black text-xs uppercase tracking-wider transition shadow-lg flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                    <span>🏁 ADVANCE TO SEASON {{ $selectedSeason + 1 }}</span>
+                    <span>&rarr;</span>
+                </button>
+            </form>
+        </div>
+    @endif
 
     <!-- Player Championship Status Overview Deck -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -52,7 +102,7 @@
                 </div>
             </div>
             <div class="hidden sm:block text-right font-mono text-xs text-zinc-400">
-                <div class="text-[10px] text-zinc-500 uppercase">Championship Leader</div>
+                <div class="text-[10px] text-zinc-500 uppercase">Season Leader</div>
                 <div class="font-bold text-white mt-0.5">{{ $season['leader_constructor_name'] }}</div>
                 <div class="text-amber-400 font-bold">{{ $season['leader_constructor_points'] }} PTS</div>
             </div>
@@ -75,7 +125,7 @@
                 </div>
             </div>
             <div class="hidden sm:block text-right font-mono text-xs text-zinc-400">
-                <div class="text-[10px] text-zinc-500 uppercase">Championship Leader</div>
+                <div class="text-[10px] text-zinc-500 uppercase">Season Leader</div>
                 <div class="font-bold text-white mt-0.5">{{ $season['leader_driver_name'] }}</div>
                 <div class="text-cyan-300 font-bold">{{ $season['leader_driver_points'] }} PTS</div>
             </div>
@@ -89,9 +139,9 @@
             <div class="flex items-center gap-2">
                 <button
                     type="button"
-                    @click="activeTab = 'constructors'"
-                    :class="activeTab === 'constructors' ? 'bg-orange-600 text-white font-bold shadow' : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'"
-                    class="px-4 py-2 rounded text-xs font-mono uppercase tracking-wider transition cursor-pointer flex items-center gap-2"
+                    id="tabBtnConstructors"
+                    onclick="switchStandingsTab('constructors')"
+                    class="px-4 py-2 rounded text-xs font-mono uppercase tracking-wider transition cursor-pointer flex items-center gap-2 bg-orange-600 text-white font-bold shadow"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                     <span>Constructors' Championship</span>
@@ -99,9 +149,9 @@
 
                 <button
                     type="button"
-                    @click="activeTab = 'drivers'"
-                    :class="activeTab === 'drivers' ? 'bg-cyan-600 text-white font-bold shadow' : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'"
-                    class="px-4 py-2 rounded text-xs font-mono uppercase tracking-wider transition cursor-pointer flex items-center gap-2"
+                    id="tabBtnDrivers"
+                    onclick="switchStandingsTab('drivers')"
+                    class="px-4 py-2 rounded text-xs font-mono uppercase tracking-wider transition cursor-pointer flex items-center gap-2 bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                     <span>Drivers' Championship</span>
@@ -119,7 +169,7 @@
         </div>
 
         <!-- 1. Constructors' Championship Table -->
-        <div x-show="activeTab === 'constructors'" class="overflow-x-auto">
+        <div id="constructorsTable" class="overflow-x-auto">
             <table class="w-full text-left text-xs font-mono">
                 <thead class="bg-zinc-950 text-zinc-500 uppercase text-[11px] border-b border-zinc-800">
                     <tr>
@@ -185,7 +235,7 @@
         </div>
 
         <!-- 2. Drivers' Championship Table -->
-        <div x-show="activeTab === 'drivers'" class="overflow-x-auto" style="display: none;">
+        <div id="driversTable" class="overflow-x-auto hidden">
             <table class="w-full text-left text-xs font-mono">
                 <thead class="bg-zinc-950 text-zinc-500 uppercase text-[11px] border-b border-zinc-800">
                     <tr>
@@ -268,4 +318,31 @@
         </a>
     </div>
 </div>
+
+<script>
+    function switchStandingsTab(tab) {
+        const constructorsBtn = document.getElementById('tabBtnConstructors');
+        const driversBtn = document.getElementById('tabBtnDrivers');
+        const constructorsTable = document.getElementById('constructorsTable');
+        const driversTable = document.getElementById('driversTable');
+
+        if (!constructorsBtn || !driversBtn || !constructorsTable || !driversTable) return;
+
+        if (tab === 'drivers') {
+            // Activate Drivers tab
+            driversBtn.className = 'px-4 py-2 rounded text-xs font-mono uppercase tracking-wider transition cursor-pointer flex items-center gap-2 bg-cyan-600 text-white font-bold shadow';
+            constructorsBtn.className = 'px-4 py-2 rounded text-xs font-mono uppercase tracking-wider transition cursor-pointer flex items-center gap-2 bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800';
+
+            constructorsTable.classList.add('hidden');
+            driversTable.classList.remove('hidden');
+        } else {
+            // Activate Constructors tab
+            constructorsBtn.className = 'px-4 py-2 rounded text-xs font-mono uppercase tracking-wider transition cursor-pointer flex items-center gap-2 bg-orange-600 text-white font-bold shadow';
+            driversBtn.className = 'px-4 py-2 rounded text-xs font-mono uppercase tracking-wider transition cursor-pointer flex items-center gap-2 bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800';
+
+            driversTable.classList.add('hidden');
+            constructorsTable.classList.remove('hidden');
+        }
+    }
+</script>
 @endsection

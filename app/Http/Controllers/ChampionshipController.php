@@ -21,15 +21,25 @@ class ChampionshipController extends Controller
         /** @var Team $team */
         $team = $user->team;
 
-        $seasonOverview = $championshipService->getSeasonOverview($team);
-        $constructorsStandings = $championshipService->getConstructorsStandings($team);
-        $driversStandings = $championshipService->getDriversStandings($team);
+        $availableSeasons = $team->availableSeasons();
+        $requestedSeason = $request->query('season');
+        $selectedSeason = $requestedSeason ? (int) $requestedSeason : (int) $team->current_season;
+
+        if (! in_array($selectedSeason, $availableSeasons, true)) {
+            $selectedSeason = (int) $team->current_season;
+        }
+
+        $seasonOverview = $championshipService->getSeasonOverview($team, $selectedSeason);
+        $constructorsStandings = $championshipService->getConstructorsStandings($team, $selectedSeason);
+        $driversStandings = $championshipService->getDriversStandings($team, $selectedSeason);
 
         return view('standings.index', [
             'team' => $team,
             'season' => $seasonOverview,
             'constructorsStandings' => $constructorsStandings,
             'driversStandings' => $driversStandings,
+            'availableSeasons' => $availableSeasons,
+            'selectedSeason' => $selectedSeason,
         ]);
     }
 }

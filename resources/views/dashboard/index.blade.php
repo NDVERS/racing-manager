@@ -27,7 +27,7 @@
                 <!-- Championship Standing Card -->
                 <a href="{{ route('standings') }}" class="bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-800 hover:border-orange-500/50 transition-all rounded px-4 py-3 min-w-[150px] block group">
                     <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-telemetry font-bold text-zinc-400 uppercase tracking-wider group-hover:text-orange-400">CHAMPIONSHIP</span>
+                        <span class="text-[10px] font-telemetry font-bold text-zinc-400 uppercase tracking-wider group-hover:text-orange-400">SEASON {{ $team->current_season }}</span>
                         <span class="text-[10px] text-zinc-500 group-hover:text-orange-400">&rarr;</span>
                     </div>
                     <div class="text-xl sm:text-2xl font-telemetry font-black text-white mt-0.5 flex items-baseline gap-1.5">

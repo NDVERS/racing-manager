@@ -51,8 +51,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/guide', [DashboardController::class, 'guide'])->name('guide');
         Route::post('/tutorial/claim-bonus', [DashboardController::class, 'claimTutorialBonus'])->name('tutorial.claim-bonus');
 
-        // Garage & Car Management
+        // Garage & Car Management & Chassis Dealership
         Route::get('/garage', [GarageController::class, 'index'])->name('garage.index');
+        Route::get('/garage/dealership', [GarageController::class, 'dealership'])->name('garage.dealership');
+        Route::post('/garage/dealership/{car}/buy', [GarageController::class, 'buy'])->name('garage.buy');
         Route::get('/garage/{car}', [GarageController::class, 'show'])->name('garage.show');
         Route::post('/garage/{car}/set-active', [GarageController::class, 'setActive'])->name('garage.set-active');
         Route::post('/garage/{car}/upgrades', [GarageController::class, 'purchaseUpgrade'])->name('garage.upgrades.purchase');
@@ -68,9 +70,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/sponsors', [SponsorController::class, 'index'])->name('sponsors.index');
         Route::post('/sponsors/{sponsor}/sign', [SponsorController::class, 'sign'])->name('sponsors.sign');
 
-        // Season Championship Standings
+        // Season Championship Standings & Season Advancement
         Route::get('/standings', [ChampionshipController::class, 'index'])->name('standings');
         Route::get('/championship', [ChampionshipController::class, 'index'])->name('championship');
+        Route::post('/season/advance', [RaceController::class, 'advanceSeason'])->name('season.advance');
 
         // Grand Prix Race System & Simulation
         Route::get('/races', [RaceController::class, 'index'])->name('races.index');

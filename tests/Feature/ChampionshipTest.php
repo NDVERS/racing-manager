@@ -243,4 +243,55 @@ class ChampionshipTest extends TestCase
         $response->assertSee('CHAMPIONSHIP');
         $response->assertSee('Championship Standings');
     }
+
+    /**
+     * Test overview card rank matches leaderboard table rank when player wins P1 and has AI-pool driver name.
+     */
+    public function test_overview_card_rank_matches_leaderboard_when_player_is_p1(): void
+    {
+        $user = User::factory()->create();
+        $team = Team::factory()->create(['user_id' => $user->id, 'name' => 'Kuro Racing']);
+        // Use a driver whose name happens to be in aiGridPool ("Liam Vance")
+        $driver = Driver::factory()->create([
+            'team_id' => $team->id,
+            'name' => 'Liam Vance',
+            'is_lead' => true,
+        ]);
+        $car = Car::factory()->create([
+            'team_id' => $team->id,
+            'name' => 'Kuro GT',
+            'is_active' => true,
+        ]);
+
+        $race = Race::factory()->create(['name' => 'Suzuka GP']);
+
+        RaceResult::create([
+            'race_id' => $race->id,
+            'team_id' => $team->id,
+            'car_id' => $car->id,
+            'driver_id' => $driver->id,
+            'position' => 1,
+            'race_time' => '13:45.100',
+            'prize_money' => 25000,
+            'reputation_earned' => 25,
+            'strategy' => 'balanced',
+            'status' => 'finished',
+            'simulation_log' => [
+                'standings' => [
+                    ['position' => 1, 'driver_name' => 'Liam Vance', 'team_name' => 'Kuro Racing', 'car_name' => 'Kuro GT', 'is_player' => true],
+                    ['position' => 2, 'driver_name' => 'Marco Rossi', 'team_name' => 'Scuderia Veloce', 'car_name' => 'Veloce C26', 'is_player' => false],
+                ],
+                'fastest_lap_overall' => ['driver' => 'Liam Vance', 'lap_time' => '1:10.000'],
+            ],
+        ]);
+
+        $response = $this->actingAs($user)->get(route('standings'));
+        $response->assertOk();
+
+        $season = $response->viewData('season');
+        $this->assertEquals(1, $season['player_constructor_rank']);
+        $this->assertEquals(1, $season['player_driver_rank']);
+        $this->assertEquals(26, $season['player_constructor_points']);
+        $this->assertEquals(26, $season['player_driver_points']);
+    }
 }

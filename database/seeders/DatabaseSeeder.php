@@ -43,10 +43,10 @@ class DatabaseSeeder extends Seeder
 
             $kuroGt = Car::where('name', 'Kuro GT')->whereNull('team_id')->first();
             if ($kuroGt) {
-                $kuroGt->update([
-                    'team_id' => $team->id,
-                    'is_active' => true,
-                ]);
+                $userCar = $kuroGt->replicate();
+                $userCar->team_id = $team->id;
+                $userCar->is_active = true;
+                $userCar->save();
             }
 
             $alexCarter = Driver::where('name', 'Alex Carter')->whereNull('team_id')->first();

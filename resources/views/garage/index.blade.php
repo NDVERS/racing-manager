@@ -28,6 +28,10 @@
                     <div class="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">TOTAL ASSETS</div>
                     <div class="text-lg font-mono font-black text-white">{{ $cars->count() }} <span class="text-xs text-zinc-400 font-normal">CHASSIS</span></div>
                 </div>
+                <a href="{{ route('garage.dealership') }}" class="px-4 py-2.5 rounded bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 hover:from-orange-500 hover:to-amber-400 text-black text-xs font-mono font-black tracking-wider uppercase transition shadow-lg flex items-center gap-1.5 whitespace-nowrap">
+                    <span>🛒 Chassis Showroom</span>
+                    <span>&rarr;</span>
+                </a>
             </div>
         </div>
     </div>
@@ -59,6 +63,23 @@
             </div>
         </div>
     @endif
+
+    <!-- Chassis Showroom Promo Banner -->
+    <div class="bg-zinc-900/80 border border-zinc-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded bg-zinc-950 border border-zinc-800 flex items-center justify-center text-orange-400 text-base shrink-0">
+                🏎️
+            </div>
+            <div>
+                <h4 class="text-xs font-bold font-mono text-white uppercase">Looking for New Performance Blueprints?</h4>
+                <p class="text-[11px] font-mono text-zinc-400">Acquire factory certified chassis models with specialized top speed, high downforce, or rapid corner-exit traits.</p>
+            </div>
+        </div>
+        <a href="{{ route('garage.dealership') }}" class="px-3.5 py-1.5 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-orange-400 text-xs font-mono font-bold uppercase transition flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+            <span>Browse Showroom</span>
+            <span>&rarr;</span>
+        </a>
+    </div>
 
     <!-- Car Roster Grid -->
     <div class="space-y-4">

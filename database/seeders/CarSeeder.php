@@ -67,7 +67,7 @@ class CarSeeder extends Seeder
 
         foreach ($cars as $carData) {
             Car::firstOrCreate(
-                ['name' => $carData['name']],
+                ['name' => $carData['name'], 'team_id' => null],
                 $carData
             );
         }

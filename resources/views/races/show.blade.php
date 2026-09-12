@@ -432,14 +432,28 @@
             </div>
 
             <!-- Past Circuit Result (if competed before) -->
-            @if($pastResult)
+            @if($latestResult)
                 <div class="bg-zinc-900 border border-indigo-500/40 rounded p-5 shadow-lg">
                     <div class="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400 mb-2">
-                        Past Constructor Result
+                        Season {{ $currentSeason }} Grand Prix Result
+                    </div>
+                    <div class="flex justify-between items-baseline font-mono text-xs">
+                        <span class="text-zinc-300">Finish Position:</span>
+                        <span class="text-indigo-300 font-black text-sm">P{{ $latestResult->position }}</span>
+                    </div>
+                    <div class="flex justify-between items-baseline font-mono text-xs mt-1">
+                        <span class="text-zinc-500">Earned Prize:</span>
+                        <span class="text-amber-400 font-bold">+{{ number_format($latestResult->prize_money) }} CR</span>
+                    </div>
+                </div>
+            @elseif($pastResult)
+                <div class="bg-zinc-900 border border-zinc-700/60 rounded p-5 shadow-lg">
+                    <div class="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                        Historic Record (Season {{ $pastResult->season }})
                     </div>
                     <div class="flex justify-between items-baseline font-mono text-xs">
                         <span class="text-zinc-300">Previous Finish:</span>
-                        <span class="text-indigo-300 font-black text-sm">P{{ $pastResult->position }}</span>
+                        <span class="text-zinc-200 font-bold text-sm">P{{ $pastResult->position }}</span>
                     </div>
                     <div class="flex justify-between items-baseline font-mono text-xs mt-1">
                         <span class="text-zinc-500">Earned Prize:</span>

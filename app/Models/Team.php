@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'name', 'money', 'reputation'])]
+#[Fillable(['user_id', 'name', 'money', 'reputation', 'current_season'])]
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
@@ -25,7 +25,24 @@ class Team extends Model
         return [
             'money' => 'integer',
             'reputation' => 'integer',
+            'current_season' => 'integer',
         ];
+    }
+
+    /**
+     * Get the team's available credits balance (alias of money).
+     */
+    public function getCreditsAttribute(): int
+    {
+        return (int) $this->money;
+    }
+
+    /**
+     * Set the team's credits balance.
+     */
+    public function setCreditsAttribute(int $value): void
+    {
+        $this->attributes['money'] = $value;
     }
 
     /**
@@ -150,5 +167,35 @@ class Team extends Model
     public function primaryDriver(): ?Driver
     {
         return $this->drivers()->where('is_lead', true)->first();
+    }
+
+    /**
+     * Check if all scheduled championship Grand Prix races for the current season have been completed.
+     */
+    public function isCurrentSeasonCompleted(): bool
+    {
+        $totalRaces = Race::count();
+        if ($totalRaces === 0) {
+            return false;
+        }
+
+        $completedRacesCount = $this->raceResults()
+            ->where('season', $this->current_season)
+            ->distinct('race_id')
+            ->count('race_id');
+
+        return $completedRacesCount >= $totalRaces;
+    }
+
+    /**
+     * Get list of all available seasons for this team (from 1 up to current_season).
+     *
+     * @return array<int, int>
+     */
+    public function availableSeasons(): array
+    {
+        $maxSeason = max(1, (int) $this->current_season);
+
+        return range(1, $maxSeason);
     }
 }

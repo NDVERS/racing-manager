@@ -44,36 +44,20 @@ class ChampionshipService
     ];
 
     /**
-     * Get drivers' championship standings table for the team's season.
+     * Get drivers' championship standings table for the specified season.
      *
      * @return array<int, array<string, mixed>>
      */
-    public function getDriversStandings(Team $team): array
+    public function getDriversStandings(Team $team, ?int $season = null): array
     {
+        $targetSeason = $season ?? max(1, (int) $team->current_season);
         $playerDriver = $team->primaryDriver();
         $playerDriverName = $playerDriver ? $playerDriver->name : 'Lead Driver';
         $playerCar = $team->activeCar();
         $playerCarName = $playerCar ? $playerCar->name : 'Race Chassis';
 
-        // 1. Initialize drivers table
+        // 1. Initialize AI drivers entries first
         $drivers = [];
-
-        // Player driver entry
-        $drivers[$playerDriverName] = [
-            'driver_name' => $playerDriverName,
-            'team_name' => $team->name,
-            'car_name' => $playerCarName,
-            'is_player' => true,
-            'points' => 0,
-            'wins' => 0,
-            'podiums' => 0,
-            'fastest_laps' => 0,
-            'races_entered' => 0,
-            'best_finish' => 99,
-            'recent_finishes' => [],
-        ];
-
-        // AI drivers entries
         foreach ($this->aiGridPool as $ai) {
             $drivers[$ai['driver']] = [
                 'driver_name' => $ai['driver'],
@@ -90,8 +74,24 @@ class ChampionshipService
             ];
         }
 
-        // 2. Accumulate results from team's completed races
+        // Initialize / enforce Player driver entry with is_player = true
+        $drivers[$playerDriverName] = [
+            'driver_name' => $playerDriverName,
+            'team_name' => $team->name,
+            'car_name' => $playerCarName,
+            'is_player' => true,
+            'points' => 0,
+            'wins' => 0,
+            'podiums' => 0,
+            'fastest_laps' => 0,
+            'races_entered' => 0,
+            'best_finish' => 99,
+            'recent_finishes' => [],
+        ];
+
+        // 2. Accumulate results from team's completed races in this season
         $raceResults = RaceResult::where('team_id', $team->id)
+            ->where('season', $targetSeason)
             ->with(['race', 'car', 'driver'])
             ->orderBy('created_at')
             ->get();
@@ -104,13 +104,20 @@ class ChampionshipService
                 foreach ($sim['standings'] as $driverEntry) {
                     $dName = $driverEntry['driver_name'];
                     $pos = (int) $driverEntry['position'];
+                    $isPlayerEntry = ! empty($driverEntry['is_player'])
+                        || ($dName === $playerDriverName)
+                        || ($result->driver && $dName === $result->driver->name)
+                        || (($driverEntry['team_name'] ?? '') === $team->name);
 
-                    if (! isset($drivers[$dName])) {
-                        $drivers[$dName] = [
-                            'driver_name' => $dName,
-                            'team_name' => $driverEntry['team_name'] ?? 'Independent',
-                            'car_name' => $driverEntry['car_name'] ?? 'Chassis',
-                            'is_player' => (bool) ($driverEntry['is_player'] ?? false),
+                    // If this was the player's driver in the race, map to the current player driver key
+                    $targetKey = $isPlayerEntry ? $playerDriverName : $dName;
+
+                    if (! isset($drivers[$targetKey])) {
+                        $drivers[$targetKey] = [
+                            'driver_name' => $targetKey,
+                            'team_name' => $isPlayerEntry ? $team->name : ($driverEntry['team_name'] ?? 'Independent'),
+                            'car_name' => $isPlayerEntry ? $playerCarName : ($driverEntry['car_name'] ?? 'Chassis'),
+                            'is_player' => $isPlayerEntry,
                             'points' => 0,
                             'wins' => 0,
                             'podiums' => 0,
@@ -121,22 +128,27 @@ class ChampionshipService
                         ];
                     }
 
-                    $earnedPts = $this->pointsMap[$pos] ?? 0;
-                    if ($pos <= 10 && $fastestLapDriver === $dName) {
-                        $earnedPts += 1;
-                        $drivers[$dName]['fastest_laps']++;
+                    if ($isPlayerEntry) {
+                        $drivers[$targetKey]['is_player'] = true;
+                        $drivers[$targetKey]['team_name'] = $team->name;
                     }
 
-                    $drivers[$dName]['points'] += $earnedPts;
-                    $drivers[$dName]['races_entered']++;
-                    $drivers[$dName]['best_finish'] = min($drivers[$dName]['best_finish'], $pos);
-                    $drivers[$dName]['recent_finishes'][] = $pos;
+                    $earnedPts = $this->pointsMap[$pos] ?? 0;
+                    if ($pos <= 10 && ($fastestLapDriver === $dName || ($isPlayerEntry && $fastestLapDriver === $playerDriverName))) {
+                        $earnedPts += 1;
+                        $drivers[$targetKey]['fastest_laps']++;
+                    }
+
+                    $drivers[$targetKey]['points'] += $earnedPts;
+                    $drivers[$targetKey]['races_entered']++;
+                    $drivers[$targetKey]['best_finish'] = min($drivers[$targetKey]['best_finish'], $pos);
+                    $drivers[$targetKey]['recent_finishes'][] = $pos;
 
                     if ($pos === 1) {
-                        $drivers[$dName]['wins']++;
+                        $drivers[$targetKey]['wins']++;
                     }
                     if ($pos <= 3) {
-                        $drivers[$dName]['podiums']++;
+                        $drivers[$targetKey]['podiums']++;
                     }
                 }
             } else {
@@ -188,34 +200,20 @@ class ChampionshipService
     }
 
     /**
-     * Get constructors' championship standings table for the team's season.
+     * Get constructors' championship standings table for the specified season.
      *
      * @return array<int, array<string, mixed>>
      */
-    public function getConstructorsStandings(Team $team): array
+    public function getConstructorsStandings(Team $team, ?int $season = null): array
     {
+        $targetSeason = $season ?? max(1, (int) $team->current_season);
         $playerCar = $team->activeCar();
         $playerCarName = $playerCar ? $playerCar->name : 'Race Chassis';
         $playerDriver = $team->primaryDriver();
         $playerDriverName = $playerDriver ? $playerDriver->name : 'Lead Driver';
 
-        // 1. Initialize constructors table
+        // 1. Initialize AI constructors entries first
         $constructors = [];
-
-        // Player team entry
-        $constructors[$team->name] = [
-            'team_name' => $team->name,
-            'car_name' => $playerCarName,
-            'lead_driver' => $playerDriverName,
-            'is_player' => true,
-            'points' => 0,
-            'wins' => 0,
-            'podiums' => 0,
-            'races_entered' => 0,
-            'best_finish' => 99,
-        ];
-
-        // AI constructors entries
         foreach ($this->aiGridPool as $ai) {
             $constructors[$ai['team']] = [
                 'team_name' => $ai['team'],
@@ -230,8 +228,22 @@ class ChampionshipService
             ];
         }
 
-        // 2. Accumulate results from team's completed races
+        // Initialize / enforce Player team entry with is_player = true
+        $constructors[$team->name] = [
+            'team_name' => $team->name,
+            'car_name' => $playerCarName,
+            'lead_driver' => $playerDriverName,
+            'is_player' => true,
+            'points' => 0,
+            'wins' => 0,
+            'podiums' => 0,
+            'races_entered' => 0,
+            'best_finish' => 99,
+        ];
+
+        // 2. Accumulate results from team's completed races in this season
         $raceResults = RaceResult::where('team_id', $team->id)
+            ->where('season', $targetSeason)
             ->with(['race', 'car', 'driver'])
             ->orderBy('created_at')
             ->get();
@@ -245,13 +257,20 @@ class ChampionshipService
                     $tName = $driverEntry['team_name'] ?? 'Independent';
                     $dName = $driverEntry['driver_name'];
                     $pos = (int) $driverEntry['position'];
+                    $isPlayerEntry = ! empty($driverEntry['is_player'])
+                        || ($tName === $team->name)
+                        || ($dName === $playerDriverName)
+                        || ($result->driver && $dName === $result->driver->name);
 
-                    if (! isset($constructors[$tName])) {
-                        $constructors[$tName] = [
-                            'team_name' => $tName,
+                    // If this is the player's entry, always attribute to player team
+                    $targetKey = $isPlayerEntry ? $team->name : $tName;
+
+                    if (! isset($constructors[$targetKey])) {
+                        $constructors[$targetKey] = [
+                            'team_name' => $targetKey,
                             'car_name' => $driverEntry['car_name'] ?? 'Chassis',
                             'lead_driver' => $dName,
-                            'is_player' => (bool) ($driverEntry['is_player'] ?? false),
+                            'is_player' => $isPlayerEntry,
                             'points' => 0,
                             'wins' => 0,
                             'podiums' => 0,
@@ -260,20 +279,24 @@ class ChampionshipService
                         ];
                     }
 
+                    if ($isPlayerEntry) {
+                        $constructors[$targetKey]['is_player'] = true;
+                    }
+
                     $earnedPts = $this->pointsMap[$pos] ?? 0;
-                    if ($pos <= 10 && $fastestLapDriver === $dName) {
+                    if ($pos <= 10 && ($fastestLapDriver === $dName || ($isPlayerEntry && $fastestLapDriver === $playerDriverName))) {
                         $earnedPts += 1;
                     }
 
-                    $constructors[$tName]['points'] += $earnedPts;
-                    $constructors[$tName]['races_entered']++;
-                    $constructors[$tName]['best_finish'] = min($constructors[$tName]['best_finish'], $pos);
+                    $constructors[$targetKey]['points'] += $earnedPts;
+                    $constructors[$targetKey]['races_entered']++;
+                    $constructors[$targetKey]['best_finish'] = min($constructors[$targetKey]['best_finish'], $pos);
 
                     if ($pos === 1) {
-                        $constructors[$tName]['wins']++;
+                        $constructors[$targetKey]['wins']++;
                     }
                     if ($pos <= 3) {
-                        $constructors[$tName]['podiums']++;
+                        $constructors[$targetKey]['podiums']++;
                     }
                 }
             } else {
@@ -327,21 +350,27 @@ class ChampionshipService
      *
      * @return array<string, mixed>
      */
-    public function getSeasonOverview(Team $team): array
+    public function getSeasonOverview(Team $team, ?int $season = null): array
     {
+        $targetSeason = $season ?? max(1, (int) $team->current_season);
         $totalRounds = Race::count();
-        $completedRounds = RaceResult::where('team_id', $team->id)->count();
+        $completedRounds = RaceResult::where('team_id', $team->id)
+            ->where('season', $targetSeason)
+            ->distinct('race_id')
+            ->count('race_id');
 
-        $driversStandings = $this->getDriversStandings($team);
-        $constructorsStandings = $this->getConstructorsStandings($team);
+        $driversStandings = $this->getDriversStandings($team, $targetSeason);
+        $constructorsStandings = $this->getConstructorsStandings($team, $targetSeason);
+        $playerDriver = $team->primaryDriver();
+        $playerDriverName = $playerDriver ? $playerDriver->name : 'Lead Driver';
 
-        // Find player constructor & driver ranks
-        $playerConstructorRank = 10;
+        // Find player constructor rank
+        $playerConstructorRank = count($constructorsStandings);
         $playerConstructorPoints = 0;
         $constructorLeaderGap = '0 PTS';
 
         foreach ($constructorsStandings as $c) {
-            if ($c['is_player']) {
+            if ($c['is_player'] || $c['team_name'] === $team->name) {
                 $playerConstructorRank = $c['rank'];
                 $playerConstructorPoints = $c['points'];
                 $constructorLeaderGap = $c['gap'];
@@ -349,12 +378,13 @@ class ChampionshipService
             }
         }
 
-        $playerDriverRank = 10;
+        // Find player driver rank
+        $playerDriverRank = count($driversStandings);
         $playerDriverPoints = 0;
         $driverLeaderGap = '0 PTS';
 
         foreach ($driversStandings as $d) {
-            if ($d['is_player']) {
+            if ($d['is_player'] || $d['driver_name'] === $playerDriverName || $d['team_name'] === $team->name) {
                 $playerDriverRank = $d['rank'];
                 $playerDriverPoints = $d['points'];
                 $driverLeaderGap = $d['gap'];
@@ -363,6 +393,9 @@ class ChampionshipService
         }
 
         return [
+            'season_number' => $targetSeason,
+            'is_current_season' => ($targetSeason === (int) $team->current_season),
+            'is_completed' => ($totalRounds > 0 && $completedRounds >= $totalRounds),
             'total_rounds' => $totalRounds,
             'completed_rounds' => $completedRounds,
             'progress_percent' => $totalRounds > 0 ? (int) round(($completedRounds / $totalRounds) * 100) : 0,

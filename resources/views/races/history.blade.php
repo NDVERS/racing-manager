@@ -131,8 +131,13 @@
                             <tr class="hover:bg-zinc-800/40 transition-colors">
                                 <!-- Circuit & Date -->
                                 <td class="py-4 px-4">
-                                    <div class="font-bold text-white text-sm uppercase">
-                                        {{ $res->race->name }}
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-white text-sm uppercase">
+                                            {{ $res->race->name }}
+                                        </span>
+                                        <span class="text-[9px] font-mono font-bold bg-orange-950/80 text-orange-400 border border-orange-500/40 px-1.5 py-0.5 rounded">
+                                            SEASON {{ $res->season ?? 1 }}
+                                        </span>
                                     </div>
                                     <div class="flex items-center gap-2 text-[11px] text-zinc-400 mt-1">
                                         <span>{{ $res->race->country }}</span>
