@@ -171,7 +171,7 @@
     </div>
 
     <!-- Quick Actions / Command Deck Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Garage Link -->
         <a href="{{ route('garage.index') }}" class="group bg-zinc-900 border border-zinc-800 hover:border-orange-500/60 rounded p-5 transition-all shadow hover:shadow-orange-500/10 block">
             <div class="flex items-center justify-between mb-3">
@@ -184,7 +184,7 @@
                 Garage Fleet
             </h2>
             <p class="text-xs text-zinc-400 mt-1 font-mono">
-                Inspect chassis specs, view telemetry ratings, and select active cars.
+                Inspect chassis specs, telemetry ratings, and select active cars.
             </p>
         </a>
 
@@ -216,7 +216,7 @@
                 Grand Prix Hub
             </h2>
             <p class="text-xs text-zinc-400 mt-1 font-mono">
-                Inspect track telemetry, review prize pools, and configure race entries.
+                Inspect track telemetry, review prize pools, and configure entries.
             </p>
         </a>
 
@@ -236,6 +236,22 @@
             </p>
         </a>
 
+        <!-- Race Archives & History (Active in Task 9) -->
+        <a href="{{ route('races.history') }}" class="group bg-zinc-900 border border-zinc-800 hover:border-purple-500/60 rounded p-5 transition-all shadow hover:shadow-purple-500/10 block">
+            <div class="flex items-center justify-between mb-3">
+                <span class="w-8 h-8 rounded bg-purple-950 border border-purple-500/30 flex items-center justify-center text-purple-400 font-mono font-bold text-xs">
+                    05
+                </span>
+                <span class="text-xs font-mono text-zinc-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all">&rarr;</span>
+            </div>
+            <h2 class="text-sm font-black text-white uppercase font-mono tracking-wide group-hover:text-purple-400 transition-colors">
+                Race Archives
+            </h2>
+            <p class="text-xs text-zinc-400 mt-1 font-mono">
+                Historical race logs, podium telemetry, and lifetime earnings.
+            </p>
+        </a>
     </div>
 </div>
 @endsection
+

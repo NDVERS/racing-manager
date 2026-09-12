@@ -24,13 +24,19 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-4 py-2.5 text-right">
+                <a href="{{ route('races.history') }}" class="px-4 py-2.5 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 hover:border-red-500/50 text-zinc-300 hover:text-white text-xs font-mono font-bold uppercase transition flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span>Race Archives &rarr;</span>
+                </a>
+
+                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-4 py-2 text-right">
                     <div class="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">SEASON STAGES</div>
                     <div class="text-xl font-mono font-black text-white">
                         {{ $races->count() }} <span class="text-xs text-zinc-500 font-normal">ROUNDS</span>
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 

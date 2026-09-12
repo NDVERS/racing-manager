@@ -62,6 +62,8 @@ Route::middleware('auth')->group(function () {
 
         // Grand Prix Race System & Simulation
         Route::get('/races', [RaceController::class, 'index'])->name('races.index');
+        Route::get('/races/history', [RaceController::class, 'history'])->name('races.history');
+        Route::get('/history', [RaceController::class, 'history'])->name('history');
         Route::get('/races/{race}', [RaceController::class, 'show'])->name('races.show');
         Route::post('/races/{race}/enter', [RaceController::class, 'enter'])->name('races.enter');
         Route::post('/races/{race}/run', [RaceController::class, 'run'])->name('races.run');

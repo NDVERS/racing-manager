@@ -53,9 +53,15 @@
                                 </a>
                                 <a
                                     href="{{ route('races.index') }}"
-                                    class="px-3 py-1.5 rounded transition-colors {{ request()->routeIs('races.*') ? 'bg-zinc-800 text-orange-400 font-bold border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900' }}"
+                                    class="px-3 py-1.5 rounded transition-colors {{ request()->routeIs('races.*') && !request()->routeIs('races.history') ? 'bg-zinc-800 text-orange-400 font-bold border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900' }}"
                                 >
                                     RACES
+                                </a>
+                                <a
+                                    href="{{ route('races.history') }}"
+                                    class="px-3 py-1.5 rounded transition-colors {{ request()->routeIs('races.history') || request()->routeIs('history') || request()->routeIs('race-results.*') ? 'bg-zinc-800 text-orange-400 font-bold border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900' }}"
+                                >
+                                    HISTORY
                                 </a>
                             </nav>
                         @endif
@@ -124,13 +130,20 @@
                         </a>
                         <a
                             href="{{ route('races.index') }}"
-                            class="px-3 py-1 rounded {{ request()->routeIs('races.*') ? 'bg-zinc-800 text-orange-400 font-bold' : 'text-zinc-400' }}"
+                            class="px-3 py-1 rounded {{ request()->routeIs('races.*') && !request()->routeIs('races.history') ? 'bg-zinc-800 text-orange-400 font-bold' : 'text-zinc-400' }}"
                         >
                             RACES
+                        </a>
+                        <a
+                            href="{{ route('races.history') }}"
+                            class="px-3 py-1 rounded {{ request()->routeIs('races.history') || request()->routeIs('history') || request()->routeIs('race-results.*') ? 'bg-zinc-800 text-orange-400 font-bold' : 'text-zinc-400' }}"
+                        >
+                            HISTORY
                         </a>
                     </div>
                 @endif
             @endauth
+
         </header>
 
         <!-- Flash Messages -->

@@ -44,6 +44,49 @@ class RaceController extends Controller
     }
 
     /**
+     * Display the team's historical race archives and cumulative performance metrics.
+     */
+    public function history(Request $request): View
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        /** @var Team $team */
+        $team = $user->team;
+
+        $allResults = RaceResult::where('team_id', $team->id)->get();
+        $results = RaceResult::where('team_id', $team->id)
+            ->with(['race', 'car', 'driver'])
+            ->orderByDesc('created_at')
+            ->paginate(10);
+
+        $totalRaces = $allResults->count();
+        $totalWins = $allResults->where('position', 1)->count();
+        $totalPodiums = $allResults->whereIn('position', [1, 2, 3])->count();
+        $totalEarnings = (int) $allResults->sum('prize_money');
+        $totalReputation = (int) $allResults->sum('reputation_earned');
+        $totalPoints = $allResults->sum(fn (RaceResult $r) => $r->points);
+        $bestFinish = $allResults->min('position');
+
+        $stats = [
+            'total_races' => $totalRaces,
+            'total_wins' => $totalWins,
+            'total_podiums' => $totalPodiums,
+            'total_earnings' => $totalEarnings,
+            'total_reputation' => $totalReputation,
+            'total_points' => $totalPoints,
+            'best_finish' => $bestFinish,
+            'win_rate' => $totalRaces > 0 ? round(($totalWins / $totalRaces) * 100, 1) : 0,
+            'podium_rate' => $totalRaces > 0 ? round(($totalPodiums / $totalRaces) * 100, 1) : 0,
+        ];
+
+        return view('races.history', [
+            'team' => $team,
+            'results' => $results,
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
      * Display the pre-race preparation and briefing hub for a specific race.
      */
     public function show(Request $request, Race $race): View

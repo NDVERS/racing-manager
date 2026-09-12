@@ -66,6 +66,43 @@ class RaceResult extends Model
     }
 
     /**
+     * Get championship points awarded for this finish position.
+     */
+    public function getPointsAttribute(): int
+    {
+        $pointsMap = [
+            1 => 25,
+            2 => 18,
+            3 => 15,
+            4 => 12,
+            5 => 10,
+            6 => 8,
+            7 => 6,
+            8 => 4,
+            9 => 2,
+            10 => 1,
+        ];
+
+        return $pointsMap[$this->position] ?? 0;
+    }
+
+    /**
+     * Determine if this result was a race victory (P1).
+     */
+    public function getIsWinAttribute(): bool
+    {
+        return $this->position === 1;
+    }
+
+    /**
+     * Determine if this result was a podium finish (P1 - P3).
+     */
+    public function getIsPodiumAttribute(): bool
+    {
+        return $this->position >= 1 && $this->position <= 3;
+    }
+
+    /**
      * Get the driver who raced in this result.
      */
     public function driver(): BelongsTo
