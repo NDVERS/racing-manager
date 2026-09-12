@@ -75,6 +75,12 @@
                                     STANDINGS
                                 </a>
                                 <a
+                                    href="{{ route('hall-of-fame.index') }}"
+                                    class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('hall-of-fame.*') ? 'bg-amber-950/80 text-amber-400 font-black border border-amber-500/40 shadow-sm shadow-amber-950/20' : 'text-zinc-400 hover:text-amber-300 hover:bg-zinc-900/80' }}"
+                                >
+                                    TROPHIES 🏆
+                                </a>
+                                <a
                                     href="{{ route('races.history') }}"
                                     class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('races.history') || request()->routeIs('history') || request()->routeIs('race-results.*') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
                                 >
@@ -191,6 +197,12 @@
                             class="px-2.5 py-1 rounded whitespace-nowrap {{ request()->routeIs('standings') || request()->routeIs('championship') ? 'bg-zinc-800 text-orange-400 border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200' }}"
                         >
                             STANDINGS
+                        </a>
+                        <a
+                            href="{{ route('hall-of-fame.index') }}"
+                            class="px-2.5 py-1 rounded whitespace-nowrap {{ request()->routeIs('hall-of-fame.*') ? 'bg-amber-950/80 text-amber-400 border border-amber-500/40' : 'text-zinc-400 hover:text-amber-300' }}"
+                        >
+                            TROPHIES 🏆
                         </a>
                         <a
                             href="{{ route('races.history') }}"

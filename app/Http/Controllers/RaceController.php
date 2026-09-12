@@ -549,6 +549,18 @@ class RaceController extends Controller
         $totalBonus = $simulationLog['sponsor_bonus_total'] ?? 0;
         $netProfit = $simulationLog['net_profit'] ?? (($totalPrize + $totalBonus) - $race->entry_fee);
 
+        $allRaces = Race::orderBy('id', 'asc')->get();
+        $completedRaceIds = RaceResult::where('team_id', $team->id)
+            ->where('season', $currentSeason)
+            ->pluck('race_id')
+            ->toArray();
+
+        $nextRace = $allRaces->first(function ($r) use ($race, $completedRaceIds) {
+            return $r->id > $race->id && ! in_array($r->id, $completedRaceIds, true);
+        }) ?? $allRaces->first(function ($r) use ($completedRaceIds) {
+            return ! in_array($r->id, $completedRaceIds, true);
+        });
+
         return view('races.results', [
             'team' => $team,
             'race' => $race,
@@ -558,6 +570,8 @@ class RaceController extends Controller
             'results' => $results,
             'simulation' => $simulationLog,
             'netProfit' => $netProfit,
+            'nextRace' => $nextRace,
+            'currentSeason' => $currentSeason,
         ]);
     }
 
@@ -590,6 +604,19 @@ class RaceController extends Controller
 
         $netProfit = $raceResult->prize_money - $raceResult->race->entry_fee;
 
+        $currentSeason = max(1, (int) $raceResult->season);
+        $allRaces = Race::orderBy('id', 'asc')->get();
+        $completedRaceIds = RaceResult::where('team_id', $team->id)
+            ->where('season', $currentSeason)
+            ->pluck('race_id')
+            ->toArray();
+
+        $nextRace = $allRaces->first(function ($r) use ($raceResult, $completedRaceIds) {
+            return $r->id > $raceResult->race_id && ! in_array($r->id, $completedRaceIds, true);
+        }) ?? $allRaces->first(function ($r) use ($completedRaceIds) {
+            return ! in_array($r->id, $completedRaceIds, true);
+        });
+
         return view('races.results', [
             'team' => $team,
             'race' => $raceResult->race,
@@ -599,6 +626,8 @@ class RaceController extends Controller
             'results' => $results,
             'simulation' => $raceResult->simulation_log,
             'netProfit' => $netProfit,
+            'nextRace' => $nextRace,
+            'currentSeason' => $currentSeason,
         ]);
     }
 

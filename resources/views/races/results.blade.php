@@ -198,13 +198,13 @@
                                             {{ $driver['car_name'] }}
                                         </td>
                                         <td class="py-3 px-3 text-right text-zinc-200">
-                                            {{ $driver['total_time'] }}
+                                            {{ $driver['total_time'] ?? ($driver['race_time'] ?? '--') }}
                                         </td>
-                                        <td class="py-3 px-3 text-right font-bold {{ $driver['gap'] === 'LEADER' ? 'text-emerald-400' : 'text-zinc-400' }}">
-                                            {{ $driver['gap'] }}
+                                        <td class="py-3 px-3 text-right font-bold {{ ($driver['gap'] ?? '') === 'LEADER' ? 'text-emerald-400' : 'text-zinc-400' }}">
+                                            {{ $driver['gap'] ?? '--' }}
                                         </td>
                                         <td class="py-3 px-3 text-right text-cyan-400 font-mono">
-                                            {{ $driver['fastest_lap'] }}
+                                            {{ $driver['fastest_lap'] ?? ($driver['best_lap'] ?? '--') }}
                                         </td>
                                     </tr>
                                 @endforeach
@@ -264,14 +264,58 @@
                 </div>
             @endif
 
+            <!-- Instant Next Race / Season Finale Quick-Flow Bar -->
+            @if(isset($nextRace) && $nextRace)
+                <div class="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 rounded-lg p-5 shadow-xl text-white border border-orange-400/40 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-orange-200">
+                            <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                            <span>Next Scheduled Grand Prix</span>
+                        </div>
+                        <span class="text-[10px] font-mono font-bold bg-zinc-950/80 px-2.5 py-0.5 rounded text-amber-300 border border-amber-500/40">
+                            {{ $nextRace->laps }} LAPS
+                        </span>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-black font-mono uppercase tracking-tight text-white">{{ $nextRace->name }}</h3>
+                        <p class="text-xs font-mono text-orange-100/90 mt-0.5 flex items-center gap-2">
+                            <span>📍 {{ $nextRace->location }}</span>
+                            <span>&bull;</span>
+                            <span>Entry Fee: <strong>{{ number_format($nextRace->entry_fee) }} CR</strong></span>
+                        </p>
+                    </div>
+
+                    <a href="{{ route('races.show', $nextRace) }}" class="w-full text-center py-3 px-4 rounded bg-zinc-950 hover:bg-zinc-900 border border-amber-400/80 text-amber-300 hover:text-white font-mono font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer">
+                        <span>Proceed to {{ $nextRace->name }}</span>
+                        <span class="text-base">&rarr;</span>
+                    </a>
+                </div>
+            @else
+                <div class="bg-gradient-to-r from-purple-950 via-zinc-900 to-purple-950 rounded-lg p-5 shadow-xl text-white border border-purple-500/40 space-y-3">
+                    <div class="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-purple-300">
+                        <span>🏁 Season Finale Concluded</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black font-mono uppercase tracking-tight text-white">Championship Season Complete</h3>
+                        <p class="text-xs font-mono text-zinc-300 mt-0.5">
+                            All scheduled Grand Prix rounds for Season {{ $currentSeason ?? 1 }} have been concluded.
+                        </p>
+                    </div>
+                    <a href="{{ route('standings') }}" class="w-full text-center py-3 px-4 rounded bg-purple-600 hover:bg-purple-500 text-white font-mono font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer">
+                        <span>Advance to Season Finale & Standings &rarr;</span>
+                    </a>
+                </div>
+            @endif
+
             <!-- Navigation Action Deck -->
             <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-lg space-y-3">
                 <div class="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 pb-2 border-b border-zinc-800">
                     Post-Race Command Hub
                 </div>
 
-                <a href="{{ route('races.index') }}" class="w-full text-center py-3 px-4 rounded bg-orange-600 hover:bg-orange-500 text-white text-xs font-mono font-bold tracking-wider uppercase transition shadow-md block">
-                    Next Grand Prix Schedule &rarr;
+                <a href="{{ route('races.index') }}" class="w-full text-center py-2.5 px-4 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-orange-400 hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition block">
+                    Full Calendar Schedule &rarr;
                 </a>
 
                 <a href="{{ route('standings') }}" class="w-full text-center py-2.5 px-4 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-amber-300 hover:text-amber-200 text-xs font-mono font-bold uppercase transition block">

@@ -36,6 +36,16 @@
 
             <!-- Season Selector Dropdown / Pills & Calendar Progress -->
             <div class="flex flex-wrap items-center gap-3 font-mono">
+                <!-- Trophy Room Quick Link -->
+                <a
+                    href="{{ route('hall-of-fame.index') }}"
+                    class="px-3.5 py-2 rounded text-xs font-bold bg-amber-950/70 hover:bg-amber-900/80 border border-amber-500/50 text-amber-400 hover:text-amber-300 transition-all flex items-center gap-1.5 shadow-sm"
+                    title="View Team Trophy Cabinet & Career Accolades"
+                >
+                    <span>🏆</span>
+                    <span>Trophy Room</span>
+                </a>
+
                 <!-- Season Switcher Pills -->
                 <div class="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 p-1 rounded">
                     <span class="text-[10px] text-zinc-500 uppercase px-2 font-bold">Season:</span>
@@ -307,12 +317,17 @@
 
     <!-- Quick Navigation Bar -->
     <div class="flex flex-wrap items-center justify-between gap-3 pt-2 font-mono text-xs">
-        <a href="{{ route('races.index') }}" class="px-4 py-2.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition flex items-center gap-2">
-            <span>&rarr; Enter Next Grand Prix</span>
-        </a>
-        <a href="{{ route('races.history') }}" class="px-4 py-2.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition flex items-center gap-2">
-            <span>&rarr; View Race History Archives</span>
-        </a>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('races.index') }}" class="px-4 py-2.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition flex items-center gap-2">
+                <span>&rarr; Enter Next Grand Prix</span>
+            </a>
+            <a href="{{ route('hall-of-fame.index') }}" class="px-4 py-2.5 rounded bg-amber-950/40 hover:bg-amber-950/70 border border-amber-500/40 text-amber-400 hover:text-amber-300 transition flex items-center gap-2">
+                <span>🏆 Trophy Room & Hall of Fame</span>
+            </a>
+            <a href="{{ route('races.history') }}" class="px-4 py-2.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition flex items-center gap-2">
+                <span>&rarr; View Race History Archives</span>
+            </a>
+        </div>
         <a href="{{ route('dashboard') }}" class="px-4 py-2.5 rounded bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 text-orange-400 hover:text-orange-300 transition flex items-center gap-2">
             <span>&larr; Back to Paddock Dashboard</span>
         </a>

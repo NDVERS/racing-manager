@@ -92,6 +92,11 @@
                 @php
                     $pCompound = $simulation['tactics']['tire_compound'] ?? ($simulation['tire_compound'] ?? 'medium');
                     $pMode = $simulation['tactics']['driving_mode'] ?? ($simulation['driving_mode'] ?? 'balanced');
+                    $pRes1 = $simulation['player_result_1'] ?? ($simulation['player_result'] ?? ['position' => 10, 'driver_name' => 'Driver 1', 'car_name' => 'Car 1', 'total_time' => '--', 'gap' => 'LEADER']);
+                    $pRes2 = $simulation['player_result_2'] ?? null;
+                    $isTwoCar = !empty($simulation['is_two_car']) && $pRes2 !== null;
+                    $pos1 = $pRes1['position'] ?? 10;
+                    $pos2 = $pRes2['position'] ?? null;
                 @endphp
 
                 <!-- Simulation Speed & Instant Skip Controls -->
@@ -176,34 +181,153 @@
         </div>
     </div>
 
-    <!-- Live Lap Progression Bar -->
-    <div class="bg-zinc-900 border border-zinc-800 rounded p-4 shadow-lg font-mono">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-            <div class="flex items-center gap-2">
+    <!-- Dynamic Mini-Track Sector Map & Live Gaps Visualizer -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 shadow-xl font-mono relative overflow-hidden">
+        <!-- Top Status & Sector Telemetry Row -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-zinc-800">
+            <div class="flex items-center gap-3">
                 <template x-if="!isFinished">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 text-xs font-bold uppercase">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 text-xs font-bold uppercase shadow-sm">
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                        <span>LIVE SIMULATION &bull; LAP <span x-text="currentLap"></span> / {{ $race->laps }}</span>
+                        <span>LIVE SECTOR TELEMETRY &bull; LAP <span x-text="currentLap"></span> / {{ $race->laps }}</span>
                     </span>
                 </template>
                 <template x-if="isFinished">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-950/90 border border-purple-500/50 text-purple-300 text-xs font-black uppercase">
-                        <span>🏁 CHECKERED FLAG &bull; RACE CONCLUDED</span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-950/90 border border-purple-500/50 text-purple-300 text-xs font-black uppercase shadow-sm">
+                        <span>🏁 CHECKERED FLAG &bull; GRAND PRIX FINISHED</span>
                     </span>
                 </template>
+
+                <span class="text-xs text-zinc-400 hidden sm:inline">&bull;</span>
+                <span class="text-xs text-zinc-300 font-bold hidden sm:inline">{{ $race->name }} ({{ strtoupper(str_replace('_', ' ', $race->track_type)) }})</span>
             </div>
 
-            <div class="text-xs text-zinc-400 flex items-center gap-3">
-                <span>Speed: <strong class="text-amber-400" x-text="playbackSpeed + 'x'"></strong></span>
-                <span>&bull;</span>
-                <span>Telemetry: <strong class="text-white" x-text="Math.round((currentLap / totalLaps) * 100) + '%'"></strong></span>
+            <!-- Active Sector & DRS Status Badges -->
+            <div class="flex items-center gap-2 text-xs">
+                <!-- Sector Active Indicator -->
+                <div class="px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-400 flex items-center gap-1.5">
+                    <span class="text-zinc-500 uppercase">Sector:</span>
+                    <span class="text-amber-400 font-black" x-text="isFinished ? 'S3/FINISH' : ((currentLap % 3 === 1) ? 'S1 APEX' : ((currentLap % 3 === 2) ? 'S2 INFIELD' : 'S3 CHICANE'))"></span>
+                </div>
+
+                <!-- DRS Status -->
+                <div class="px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-400 flex items-center gap-1.5">
+                    <span class="text-zinc-500 uppercase">DRS:</span>
+                    <span :class="isFinished ? 'text-zinc-500' : 'text-emerald-400 font-black animate-pulse'" x-text="isFinished ? 'CLOSED' : 'ENABLED'"></span>
+                </div>
+
+                <!-- Telemetry Progress -->
+                <div class="px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-400 hidden md:flex items-center gap-1.5">
+                    <span class="text-zinc-500 uppercase">Race Dist:</span>
+                    <strong class="text-white" x-text="Math.round((currentLap / totalLaps) * 100) + '%'"></strong>
+                </div>
             </div>
         </div>
 
-        <!-- Progress Track -->
-        <div class="w-full bg-zinc-950 rounded-full h-2.5 overflow-hidden border border-zinc-800/80">
-            <div class="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-400 transition-all duration-200 ease-linear rounded-full"
-                 :style="'width: ' + ((currentLap / totalLaps) * 100) + '%'"></div>
+        <!-- Interactive Sector Track Map Display -->
+        <div class="space-y-2 py-1">
+            <!-- Sector Header Labels -->
+            <div class="grid grid-cols-4 text-[10px] uppercase font-bold text-zinc-500 px-1">
+                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span><span>SECTOR 1 (TURN 1-4)</span></div>
+                <div class="flex items-center gap-1 text-center justify-center"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span><span>SECTOR 2 (INFIELD)</span></div>
+                <div class="flex items-center gap-1 text-center justify-center"><span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span><span>SECTOR 3 (CHICANE)</span></div>
+                <div class="flex items-center gap-1 text-right justify-end"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>DRS FINISH LINE 🏁</span></div>
+            </div>
+
+            <!-- Dynamic Track Rail with Car Position Markers -->
+            <div class="relative w-full h-10 bg-zinc-950 rounded-lg border border-zinc-800 flex items-center px-2 overflow-visible">
+                <!-- Sector Grid Divider Lines -->
+                <div class="absolute inset-0 grid grid-cols-4 pointer-events-none divide-x divide-zinc-800/80">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+
+                <!-- Track Background Progress Line -->
+                <div class="absolute left-2 right-2 h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-cyan-500 via-amber-400 to-emerald-400 rounded-full transition-all duration-300 ease-linear"
+                         :style="'width: ' + ((currentLap / totalLaps) * 100) + '%'"></div>
+                </div>
+
+                <!-- Competitor Visual Dots (Rivals in pack) -->
+                <div class="absolute transition-all duration-300 ease-out flex items-center"
+                     :style="'left: ' + (isFinished ? 98 : Math.max(4, Math.min(94, ((currentLap / totalLaps) * 100) + 1.5))) + '%'">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 border border-white shadow-sm" title="P1 Leader"></span>
+                </div>
+                <div class="absolute transition-all duration-300 ease-out flex items-center"
+                     :style="'left: ' + (isFinished ? 95 : Math.max(3, Math.min(92, ((currentLap / totalLaps) * 100) - 2.5))) + '%'">
+                    <span class="w-2 h-2 rounded-full bg-zinc-500 border border-zinc-400" title="Competitor"></span>
+                </div>
+                <div class="absolute transition-all duration-300 ease-out flex items-center"
+                     :style="'left: ' + (isFinished ? 92 : Math.max(2, Math.min(88, ((currentLap / totalLaps) * 100) - 5.0))) + '%'">
+                    <span class="w-2 h-2 rounded-full bg-zinc-600 border border-zinc-500" title="Competitor"></span>
+                </div>
+
+                <!-- Car #1 (YOU) Indicator Marker -->
+                <div class="absolute transition-all duration-300 ease-out z-20 -translate-x-1/2 flex flex-col items-center"
+                     :style="'left: ' + (isFinished ? 97 : Math.max(3, Math.min(96, ((currentLap / totalLaps) * 100) - ({{ $pos1 }} * 0.4)))) + '%'">
+                    <div class="px-1.5 py-0.5 rounded bg-cyan-500 text-black font-black text-[9px] shadow-lg shadow-cyan-500/50 flex items-center gap-0.5 border border-white">
+                        <span>C1</span>
+                    </div>
+                </div>
+
+                <!-- Car #2 (YOU) Indicator Marker (if 2-car entry) -->
+                @if($isTwoCar)
+                    <div class="absolute transition-all duration-300 ease-out z-10 -translate-x-1/2 flex flex-col items-center"
+                         :style="'left: ' + (isFinished ? 94 : Math.max(2, Math.min(94, ((currentLap / totalLaps) * 100) - ({{ $pos2 ?? 8 }} * 0.45)))) + '%'">
+                        <div class="px-1.5 py-0.5 rounded bg-blue-500 text-white font-black text-[9px] shadow-lg shadow-blue-500/50 flex items-center gap-0.5 border border-blue-200">
+                            <span>C2</span>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Live Interval Gaps & Driver Status Pills -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mt-3 pt-3 border-t border-zinc-800/80 text-xs">
+            <!-- Car 1 Live Delta -->
+            <div class="bg-zinc-950/80 border border-cyan-500/40 rounded p-2.5 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                    <span class="text-zinc-300 font-bold uppercase">Car #1 &bull; {{ $pRes1['driver_name'] }}</span>
+                </div>
+                <div class="text-right font-black text-cyan-300">
+                    <span>P{{ $pos1 }}</span>
+                    <span class="text-[10px] text-zinc-400 ml-1">({{ $pRes1['gap'] ?? 'LEADER' }})</span>
+                </div>
+            </div>
+
+            <!-- Car 2 Live Delta (if 2-car) -->
+            @if($isTwoCar)
+                <div class="bg-zinc-950/80 border border-blue-500/40 rounded p-2.5 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                        <span class="text-zinc-300 font-bold uppercase">Car #2 &bull; {{ $pRes2['driver_name'] }}</span>
+                    </div>
+                    <div class="text-right font-black text-blue-300">
+                        <span>P{{ $pos2 }}</span>
+                        <span class="text-[10px] text-zinc-400 ml-1">({{ $pRes2['gap'] ?? '+1.500s' }})</span>
+                    </div>
+                </div>
+            @else
+                <div class="bg-zinc-950/80 border border-zinc-800 rounded p-2.5 flex items-center justify-between text-zinc-500">
+                    <span>Car #2 Slot</span>
+                    <span class="text-[10px] font-bold">STANDBY / SINGLE CAR</span>
+                </div>
+            @endif
+
+            <!-- Track Weather Condition -->
+            <div class="bg-zinc-950/80 border border-zinc-800 rounded p-2.5 flex items-center justify-between">
+                <span class="text-zinc-400 uppercase">Track Surface:</span>
+                <span class="text-white font-bold">{{ $race->weather === 'wet' ? '🌧️ Wet Rain' : '☀️ Dry Asphalt' }}</span>
+            </div>
+
+            <!-- Fastest Lap Delta -->
+            <div class="bg-zinc-950/80 border border-purple-500/30 rounded p-2.5 flex items-center justify-between">
+                <span class="text-purple-400 font-bold uppercase">Fastest Lap:</span>
+                <span class="text-purple-300 font-black">{{ $simulation['fastest_lap_overall']['time'] ?? '1:14.200' }}</span>
+            </div>
         </div>
     </div>
 

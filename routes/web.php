@@ -5,6 +5,7 @@ use App\Http\Controllers\ChampionshipController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\GarageController;
+use App\Http\Controllers\HallOfFameController;
 use App\Http\Controllers\RaceController;
 use App\Http\Controllers\SponsorController;
 use App\Http\Controllers\TeamOnboardingController;
@@ -75,6 +76,7 @@ Route::middleware('auth')->group(function () {
         // Season Championship Standings & Season Advancement
         Route::get('/standings', [ChampionshipController::class, 'index'])->name('standings');
         Route::get('/championship', [ChampionshipController::class, 'index'])->name('championship');
+        Route::get('/hall-of-fame', [HallOfFameController::class, 'index'])->name('hall-of-fame.index');
         Route::post('/season/advance', [RaceController::class, 'advanceSeason'])->name('season.advance');
 
         // Grand Prix Race System & Simulation
