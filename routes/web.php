@@ -59,9 +59,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
         Route::post('/drivers/{driver}/set-lead', [DriverController::class, 'setLead'])->name('drivers.set-lead');
 
-        // Grand Prix Race System & Preparation
+        // Grand Prix Race System & Simulation
         Route::get('/races', [RaceController::class, 'index'])->name('races.index');
         Route::get('/races/{race}', [RaceController::class, 'show'])->name('races.show');
         Route::post('/races/{race}/enter', [RaceController::class, 'enter'])->name('races.enter');
+        Route::post('/races/{race}/run', [RaceController::class, 'run'])->name('races.run');
+        Route::get('/races/{race}/live', [RaceController::class, 'live'])->name('races.live');
+        Route::get('/races/{race}/results', [RaceController::class, 'results'])->name('races.results');
+        Route::get('/race-results/{raceResult}', [RaceController::class, 'showResult'])->name('race-results.show');
     });
 });

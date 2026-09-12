@@ -211,13 +211,20 @@
                     </div>
                 </div>
 
-                <!-- Registration Action Button -->
-                <div class="mt-6 pt-4 border-t border-zinc-800">
+                <!-- Registration & Simulation Action Buttons -->
+                <div class="mt-6 pt-4 border-t border-zinc-800 space-y-2">
                     @if($isReady)
+                        <form method="POST" action="{{ route('races.run', $race) }}" class="w-full">
+                            @csrf
+                            <button type="submit" class="w-full text-center py-3 px-4 rounded bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white text-xs font-mono font-black tracking-wider uppercase transition shadow-lg cursor-pointer flex items-center justify-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                                <span>Start Live Race Simulation &rarr;</span>
+                            </button>
+                        </form>
                         <form method="POST" action="{{ route('races.enter', $race) }}" class="w-full">
                             @csrf
-                            <button type="submit" class="w-full text-center py-3 px-4 rounded bg-red-600 hover:bg-red-500 text-white text-xs font-mono font-bold tracking-wider uppercase transition shadow-lg cursor-pointer">
-                                Confirm Race Lineup & Grid Slot
+                            <button type="submit" class="w-full text-center py-2 px-3 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-300 text-[11px] font-mono font-bold uppercase transition cursor-pointer">
+                                Confirm Lineup Only
                             </button>
                         </form>
                     @else
