@@ -122,7 +122,9 @@
             <div class="bg-zinc-950/80 border border-zinc-800 rounded p-4 relative">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold">LEAD RACE DRIVER</span>
-                    <span class="text-[10px] font-mono text-zinc-500 uppercase">CONTRACT ACTIVE</span>
+                    <a href="{{ route('drivers.index') }}" class="text-[10px] font-mono text-zinc-400 hover:text-cyan-400 underline underline-offset-2">
+                        DRIVER ROSTER &rarr;
+                    </a>
                 </div>
 
                 @if($primaryDriver)
@@ -155,11 +157,13 @@
 
                     <div class="mt-3 pt-3 border-t border-zinc-900 flex justify-between items-center text-xs">
                         <span class="text-[11px] text-zinc-400 font-mono">Roster: {{ $totalDrivers }} driver(s)</span>
-                        <span class="text-[11px] font-mono text-zinc-500">Management in Task 4</span>
+                        <a href="{{ route('drivers.show', $primaryDriver) }}" class="text-xs font-mono text-cyan-400 hover:text-cyan-300 font-semibold">
+                            Profile Sheet &rarr;
+                        </a>
                     </div>
                 @else
                     <div class="py-6 text-center text-xs font-mono text-zinc-500">
-                        No contracted driver available.
+                        No contracted driver available. <a href="{{ route('drivers.market') }}" class="text-cyan-400 underline">Scout Driver Market</a>
                     </div>
                 @endif
             </div>
@@ -184,21 +188,21 @@
             </p>
         </a>
 
-        <!-- Driver Lineup (Task 4) -->
-        <div class="bg-zinc-900/60 border border-zinc-800/60 rounded p-5 opacity-75">
+        <!-- Driver Lineup Link (Active in Task 4) -->
+        <a href="{{ route('drivers.index') }}" class="group bg-zinc-900 border border-zinc-800 hover:border-cyan-500/60 rounded p-5 transition-all shadow hover:shadow-cyan-500/10 block">
             <div class="flex items-center justify-between mb-3">
-                <span class="w-8 h-8 rounded bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500 font-mono font-bold text-xs">
+                <span class="w-8 h-8 rounded bg-cyan-950 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-mono font-bold text-xs">
                     02
                 </span>
-                <span class="text-[9px] font-mono bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">TASK 4</span>
+                <span class="text-xs font-mono text-zinc-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all">&rarr;</span>
             </div>
-            <h2 class="text-sm font-black text-zinc-400 uppercase font-mono tracking-wide">
-                Driver Roster
+            <h2 class="text-sm font-black text-white uppercase font-mono tracking-wide group-hover:text-cyan-400 transition-colors">
+                Driver Lineup
             </h2>
-            <p class="text-xs text-zinc-500 mt-1 font-mono">
-                Contract market, driver training, and skill development system.
+            <p class="text-xs text-zinc-400 mt-1 font-mono">
+                Manage contracted drivers, assign lead seat, and scout the market.
             </p>
-        </div>
+        </a>
 
         <!-- Race Hub (Task 5) -->
         <div class="bg-zinc-900/60 border border-zinc-800/60 rounded p-5 opacity-75">

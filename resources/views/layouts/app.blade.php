@@ -45,10 +45,12 @@
                                 >
                                     GARAGE
                                 </a>
-                                <span class="px-3 py-1.5 rounded text-zinc-600 cursor-not-allowed flex items-center gap-1" title="Driver Market unlocks in Task 4">
-                                    <span>DRIVERS</span>
-                                    <span class="text-[9px] bg-zinc-900 text-zinc-600 px-1.5 py-0.5 rounded border border-zinc-800">T4</span>
-                                </span>
+                                <a
+                                    href="{{ route('drivers.index') }}"
+                                    class="px-3 py-1.5 rounded transition-colors {{ request()->routeIs('drivers.*') ? 'bg-zinc-800 text-orange-400 font-bold border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900' }}"
+                                >
+                                    DRIVERS
+                                </a>
                                 <span class="px-3 py-1.5 rounded text-zinc-600 cursor-not-allowed flex items-center gap-1" title="Race Hub unlocks in Task 5">
                                     <span>RACES</span>
                                     <span class="text-[9px] bg-zinc-900 text-zinc-600 px-1.5 py-0.5 rounded border border-zinc-800">T5</span>
@@ -112,7 +114,12 @@
                         >
                             GARAGE
                         </a>
-                        <span class="px-2 py-1 text-zinc-600">DRIVERS (T4)</span>
+                        <a
+                            href="{{ route('drivers.index') }}"
+                            class="px-3 py-1 rounded {{ request()->routeIs('drivers.*') ? 'bg-zinc-800 text-orange-400 font-bold' : 'text-zinc-400' }}"
+                        >
+                            DRIVERS
+                        </a>
                         <span class="px-2 py-1 text-zinc-600">RACES (T5)</span>
                     </div>
                 @endif

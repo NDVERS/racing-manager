@@ -81,6 +81,6 @@ class Team extends Model
      */
     public function primaryDriver(): ?Driver
     {
-        return $this->drivers()->first();
+        return $this->drivers()->where('is_lead', true)->first();
     }
 }

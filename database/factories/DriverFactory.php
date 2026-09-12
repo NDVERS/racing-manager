@@ -41,4 +41,14 @@ class DriverFactory extends Factory
             'team_id' => $team?->id ?? Team::factory(),
         ]);
     }
+
+    /**
+     * Indicate that the driver is the designated lead driver.
+     */
+    public function lead(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_lead' => true,
+        ]);
+    }
 }

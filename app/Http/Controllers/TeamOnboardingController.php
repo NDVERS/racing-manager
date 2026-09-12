@@ -104,7 +104,10 @@ class TeamOnboardingController extends Controller
                 ->first();
 
             if ($alexCarter) {
-                $alexCarter->update(['team_id' => $newTeam->id]);
+                $alexCarter->update([
+                    'team_id' => $newTeam->id,
+                    'is_lead' => true,
+                ]);
             } else {
                 Driver::create([
                     'team_id' => $newTeam->id,
@@ -117,6 +120,7 @@ class TeamOnboardingController extends Controller
                     'racecraft' => 66,
                     'experience' => 40,
                     'salary' => 1200,
+                    'is_lead' => true,
                 ]);
             }
 

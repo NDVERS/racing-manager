@@ -61,7 +61,7 @@ class DashboardTest extends TestCase
             'is_active' => true,
         ]);
 
-        $driver = Driver::factory()->forTeam($team)->create([
+        $driver = Driver::factory()->forTeam($team)->lead()->create([
             'name' => 'Charles Leclerc',
             'salary' => 4500,
             'pace' => 88,

@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'racecraft',
     'experience',
     'salary',
+    'is_lead',
 ])]
 class Driver extends Model
 {
@@ -42,6 +43,7 @@ class Driver extends Model
             'racecraft' => 'integer',
             'experience' => 'integer',
             'salary' => 'integer',
+            'is_lead' => 'boolean',
         ];
     }
 
@@ -59,5 +61,23 @@ class Driver extends Model
     public function raceResults(): HasMany
     {
         return $this->hasMany(RaceResult::class);
+    }
+
+    /**
+     * Calculate composite overall rating (OVR) across all 7 core driver attributes.
+     */
+    public function overallRating(): int
+    {
+        return (int) round(
+            ($this->pace + $this->cornering + $this->consistency + $this->overtaking + $this->defensive + $this->racecraft + $this->experience) / 7
+        );
+    }
+
+    /**
+     * Calculate signing bonus / hiring fee for recruiting this driver from the market.
+     */
+    public function hiringCost(): int
+    {
+        return $this->salary * 3;
     }
 }

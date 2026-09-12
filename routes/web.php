@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\GarageController;
 use App\Http\Controllers\TeamOnboardingController;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -13,7 +15,10 @@ Route::get('/', function () {
         return redirect()->route('login');
     }
 
-    return Auth::user()->team()->exists()
+    /** @var User $user */
+    $user = Auth::user();
+
+    return $user->team()->exists()
         ? redirect()->route('dashboard')
         : redirect()->route('team.create');
 })->name('home');
@@ -45,5 +50,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/garage', [GarageController::class, 'index'])->name('garage.index');
         Route::get('/garage/{car}', [GarageController::class, 'show'])->name('garage.show');
         Route::post('/garage/{car}/set-active', [GarageController::class, 'setActive'])->name('garage.set-active');
+
+        // Driver System & Market
+        Route::get('/drivers', [DriverController::class, 'index'])->name('drivers.index');
+        Route::get('/drivers/market', [DriverController::class, 'market'])->name('drivers.market');
+        Route::post('/drivers/market/{driver}/hire', [DriverController::class, 'hire'])->name('drivers.hire');
+        Route::get('/drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
+        Route::post('/drivers/{driver}/set-lead', [DriverController::class, 'setLead'])->name('drivers.set-lead');
     });
 });
