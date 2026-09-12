@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\GarageController;
 use App\Http\Controllers\RaceController;
+use App\Http\Controllers\SponsorController;
 use App\Http\Controllers\TeamOnboardingController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -46,6 +47,8 @@ Route::middleware('auth')->group(function () {
     // Game Protected Routes (accessible only if user HAS a team)
     Route::middleware('has.team')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/guide', [DashboardController::class, 'guide'])->name('guide');
+        Route::post('/tutorial/claim-bonus', [DashboardController::class, 'claimTutorialBonus'])->name('tutorial.claim-bonus');
 
         // Garage & Car Management
         Route::get('/garage', [GarageController::class, 'index'])->name('garage.index');
@@ -59,6 +62,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/drivers/market/{driver}/hire', [DriverController::class, 'hire'])->name('drivers.hire');
         Route::get('/drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
         Route::post('/drivers/{driver}/set-lead', [DriverController::class, 'setLead'])->name('drivers.set-lead');
+
+        // Commercial Sponsors & Partnerships
+        Route::get('/sponsors', [SponsorController::class, 'index'])->name('sponsors.index');
+        Route::post('/sponsors/{sponsor}/sign', [SponsorController::class, 'sign'])->name('sponsors.sign');
 
         // Grand Prix Race System & Simulation
         Route::get('/races', [RaceController::class, 'index'])->name('races.index');

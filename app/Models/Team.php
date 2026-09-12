@@ -69,6 +69,74 @@ class Team extends Model
     }
 
     /**
+     * Get all sponsor contract pivot records for the team.
+     */
+    public function teamSponsors(): HasMany
+    {
+        return $this->hasMany(TeamSponsor::class);
+    }
+
+    /**
+     * Get all sponsors signed by the team.
+     */
+    public function sponsors()
+    {
+        return $this->belongsToMany(Sponsor::class, 'team_sponsors')
+            ->withPivot(['id', 'races_remaining', 'is_active', 'signed_at'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get all currently active sponsor contracts with sponsor details.
+     */
+    public function activeSponsors(): HasMany
+    {
+        return $this->teamSponsors()->where('is_active', true)->with('sponsor');
+    }
+
+    /**
+     * Check if team has an active contract with a specific sponsor.
+     */
+    public function hasActiveSponsor(int $sponsorId): bool
+    {
+        return $this->teamSponsors()
+            ->where('sponsor_id', $sponsorId)
+            ->where('is_active', true)
+            ->exists();
+    }
+
+    /**
+     * Determine if team has available slot to sign a given sponsor.
+     * Limit: Max 1 Primary Sponsor, Max 2 Secondary/Tertiary Sponsors.
+     */
+    public function canSignSponsor(Sponsor $sponsor): bool
+    {
+        if ($this->reputation < $sponsor->min_reputation) {
+            return false;
+        }
+
+        if ($this->hasActiveSponsor($sponsor->id)) {
+            return false;
+        }
+
+        $activePrimaryCount = $this->teamSponsors()
+            ->where('is_active', true)
+            ->whereHas('sponsor', fn ($q) => $q->where('tier', 'primary'))
+            ->count();
+
+        $activeSecondaryCount = $this->teamSponsors()
+            ->where('is_active', true)
+            ->whereHas('sponsor', fn ($q) => $q->whereIn('tier', ['secondary', 'tertiary']))
+            ->count();
+
+        if (strtolower($sponsor->tier) === 'primary') {
+            return $activePrimaryCount < 1;
+        }
+
+        return $activeSecondaryCount < 2;
+    }
+
+    /**
      * Get the team's designated active race car.
      */
     public function activeCar(): ?Car

@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             CarSeeder::class,
             DriverSeeder::class,
             RaceSeeder::class,
+            SponsorSeeder::class,
         ]);
 
         $testUser = User::firstOrCreate(

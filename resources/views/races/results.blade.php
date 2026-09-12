@@ -197,6 +197,49 @@
 
         <!-- Right 1 Col: Post-Race Pit-Wall Actions -->
         <div class="space-y-6">
+            <!-- Sponsor Contract Performance & Payouts -->
+            @if(isset($simulation['sponsor_settlements']) && count($simulation['sponsor_settlements']) > 0)
+                <div class="bg-zinc-900 border border-amber-500/40 rounded p-6 shadow-lg space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded bg-amber-400"></span>
+                            <h3 class="text-xs font-mono font-bold uppercase tracking-wider text-white">Commercial Sponsor Payouts</h3>
+                        </div>
+                        <span class="text-xs font-mono font-bold text-amber-400">
+                            +{{ number_format($simulation['sponsor_bonus_total'] ?? 0) }} CR
+                        </span>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        @foreach($simulation['sponsor_settlements'] as $settlement)
+                            <div class="bg-zinc-950 p-3 rounded border {{ $settlement['achieved'] ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-zinc-800' }} text-xs font-mono">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-white uppercase">{{ $settlement['sponsor_name'] }}</span>
+                                    @if($settlement['achieved'])
+                                        <span class="text-emerald-400 font-bold text-[10px] bg-emerald-950 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                                            ✓ TARGET HIT (+{{ number_format($settlement['bonus_earned']) }} CR)
+                                        </span>
+                                    @else
+                                        <span class="text-zinc-500 text-[10px] bg-zinc-900 px-1.5 py-0.5 rounded">
+                                            MISSED (0 CR)
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="text-[11px] text-zinc-400 mt-1">
+                                    Objective: <span class="text-zinc-300">{{ $settlement['objective_label'] ?? $settlement['target_objective'] }}</span>
+                                </div>
+                                <div class="text-[10px] text-zinc-500 mt-1 flex justify-between">
+                                    <span>Duration: {{ $settlement['races_remaining'] }} races left</span>
+                                    @if($settlement['expired'])
+                                        <span class="text-amber-400 font-bold uppercase">Contract Expired</span>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <!-- Navigation Action Deck -->
             <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-lg space-y-3">
                 <div class="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 pb-2 border-b border-zinc-800">
@@ -209,6 +252,10 @@
 
                 <a href="{{ route('dashboard') }}" class="w-full text-center py-2.5 px-4 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono font-bold uppercase transition block">
                     Return to Paddock Dashboard
+                </a>
+
+                <a href="{{ route('sponsors.index') }}" class="w-full text-center py-2.5 px-4 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-amber-400 hover:text-amber-300 text-xs font-mono font-bold uppercase transition block">
+                    Manage Sponsor Contracts
                 </a>
 
                 <a href="{{ route('garage.show', $result->car_id) }}" class="w-full text-center py-2.5 px-4 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono font-bold uppercase transition block">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Race;
 use App\Models\RaceResult;
+use App\Models\Sponsor;
 use App\Models\Team;
 use App\Models\Transaction;
 use App\Models\User;
@@ -64,8 +65,16 @@ class RaceController extends Controller
         $totalPodiums = $allResults->whereIn('position', [1, 2, 3])->count();
         $totalEarnings = (int) $allResults->sum('prize_money');
         $totalReputation = (int) $allResults->sum('reputation_earned');
-        $totalPoints = $allResults->sum(fn (RaceResult $r) => $r->points);
         $bestFinish = $allResults->min('position');
+
+        $driverPointsMap = [
+            1 => 25, 2 => 18, 3 => 15, 4 => 12, 5 => 10,
+            6 => 8, 7 => 6, 8 => 4, 9 => 2, 10 => 1,
+        ];
+        $totalChampionshipPoints = 0;
+        foreach ($allResults as $res) {
+            $totalChampionshipPoints += $driverPointsMap[$res->position] ?? 0;
+        }
 
         $stats = [
             'total_races' => $totalRaces,
@@ -73,7 +82,8 @@ class RaceController extends Controller
             'total_podiums' => $totalPodiums,
             'total_earnings' => $totalEarnings,
             'total_reputation' => $totalReputation,
-            'total_points' => $totalPoints,
+            'total_points' => $totalChampionshipPoints,
+            'championship_points' => $totalChampionshipPoints,
             'best_finish' => $bestFinish,
             'win_rate' => $totalRaces > 0 ? round(($totalWins / $totalRaces) * 100, 1) : 0,
             'podium_rate' => $totalRaces > 0 ? round(($totalPodiums / $totalRaces) * 100, 1) : 0,
@@ -87,7 +97,7 @@ class RaceController extends Controller
     }
 
     /**
-     * Display the pre-race preparation and briefing hub for a specific race.
+     * Display pre-race preparation and configuration hub.
      */
     public function show(Request $request, Race $race): View
     {
@@ -98,17 +108,19 @@ class RaceController extends Controller
 
         $activeCar = $team->activeCar();
         $primaryDriver = $team->primaryDriver();
+        $isRaceReady = ($activeCar !== null && $primaryDriver !== null);
+
+        $hasEnoughFunds = ($team->money >= $race->entry_fee);
+
+        $latestResult = RaceResult::where('race_id', $race->id)
+            ->where('team_id', $team->id)
+            ->with(['car', 'driver'])
+            ->latest()
+            ->first();
 
         $hasActiveCar = ($activeCar !== null);
         $hasPrimaryDriver = ($primaryDriver !== null);
-        $hasEnoughFunds = ($team->money >= $race->entry_fee);
-
         $isReady = $hasActiveCar && $hasPrimaryDriver && $hasEnoughFunds;
-
-        $pastResult = RaceResult::where('race_id', $race->id)
-            ->where('team_id', $team->id)
-            ->latest()
-            ->first();
 
         return view('races.show', [
             'team' => $team,
@@ -117,14 +129,16 @@ class RaceController extends Controller
             'primaryDriver' => $primaryDriver,
             'hasActiveCar' => $hasActiveCar,
             'hasPrimaryDriver' => $hasPrimaryDriver,
+            'isRaceReady' => $isRaceReady,
             'hasEnoughFunds' => $hasEnoughFunds,
             'isReady' => $isReady,
-            'pastResult' => $pastResult,
+            'latestResult' => $latestResult,
+            'pastResult' => $latestResult,
         ]);
     }
 
     /**
-     * Confirm entry setup / register lineup for the race.
+     * Confirm lineup and pre-race readiness.
      */
     public function enter(Request $request, Race $race): RedirectResponse
     {
@@ -136,13 +150,13 @@ class RaceController extends Controller
         $activeCar = $team->activeCar();
         if (! $activeCar) {
             return redirect()->route('garage.index')
-                ->with('warning', 'You must designate an active primary race car before entering a race.');
+                ->with('warning', 'Please configure and assign an active primary race car in your garage first.');
         }
 
         $primaryDriver = $team->primaryDriver();
         if (! $primaryDriver) {
             return redirect()->route('drivers.index')
-                ->with('warning', 'You must assign a lead race driver before entering a race.');
+                ->with('warning', 'Please designate a lead driver in your team lineup first.');
         }
 
         if ($team->money < $race->entry_fee) {
@@ -229,7 +243,72 @@ class RaceController extends Controller
                 $team->refresh();
             }
 
-            // 6. Record official RaceResult
+            // 6. Sponsor Contracts Evaluation & Payout
+            $activeContracts = $team->teamSponsors()->where('is_active', true)->with('sponsor')->get();
+            $sponsorSettlements = [];
+            $totalSponsorBonus = 0;
+
+            foreach ($activeContracts as $contract) {
+                $sponsor = $contract->sponsor;
+                $achieved = false;
+                $isPlayerFinished = ($sim['player_result']['status'] ?? 'finished') === 'finished';
+
+                switch ($sponsor->target_objective) {
+                    case 'finish_top_3':
+                        $achieved = ($playerPosition <= 3 && $isPlayerFinished);
+                        break;
+                    case 'finish_top_5':
+                        $achieved = ($playerPosition <= 5 && $isPlayerFinished);
+                        break;
+                    case 'score_fastest_lap':
+                        $achieved = $hasFastestLap;
+                        break;
+                    case 'finish_race':
+                    default:
+                        $achieved = $isPlayerFinished;
+                        break;
+                }
+
+                $bonusEarned = 0;
+                if ($achieved && $sponsor->bonus_per_race > 0) {
+                    $bonusEarned = $sponsor->bonus_per_race;
+                    $totalSponsorBonus += $bonusEarned;
+                    $team->increment('money', $bonusEarned);
+                    $team->refresh();
+
+                    Transaction::create([
+                        'team_id' => $team->id,
+                        'type' => 'income',
+                        'amount' => $bonusEarned,
+                        'balance_after' => $team->money,
+                        'description' => "Sponsor Objective Bonus ({$sponsor->name}): {$sponsor->objectiveLabel()}",
+                        'reference_id' => $sponsor->id,
+                        'reference_type' => Sponsor::class,
+                    ]);
+                }
+
+                // Decrement races remaining
+                $contract->decrement('races_remaining', 1);
+                $contract->refresh();
+
+                if ($contract->races_remaining <= 0) {
+                    $contract->update(['is_active' => false]);
+                }
+
+                $sponsorSettlements[] = [
+                    'sponsor_id' => $sponsor->id,
+                    'sponsor_name' => $sponsor->name,
+                    'tier' => $sponsor->tier,
+                    'target_objective' => $sponsor->target_objective,
+                    'objective_label' => $sponsor->objectiveLabel(),
+                    'achieved' => $achieved,
+                    'bonus_earned' => $bonusEarned,
+                    'races_remaining' => $contract->races_remaining,
+                    'expired' => ($contract->races_remaining <= 0),
+                ];
+            }
+
+            // 7. Record official RaceResult
             $raceResult = RaceResult::create([
                 'race_id' => $race->id,
                 'team_id' => $team->id,
@@ -247,9 +326,14 @@ class RaceController extends Controller
             $sim['result_id'] = $raceResult->id;
             $sim['financials'] = $financials;
             $sim['entry_fee'] = $race->entry_fee;
-            $sim['net_profit'] = $prizeMoney - $race->entry_fee;
+            $sim['sponsor_settlements'] = $sponsorSettlements;
+            $sim['sponsor_bonus_total'] = $totalSponsorBonus;
+            $sim['net_profit'] = ($prizeMoney + $totalSponsorBonus) - $race->entry_fee;
             $sim['balance_after'] = $team->money;
             $sim['reputation_after'] = $team->reputation;
+
+            // Update stored simulation log with complete sponsor settlements
+            $raceResult->update(['simulation_log' => $sim]);
 
             return $sim;
         });
