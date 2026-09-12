@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GarageController;
 use App\Http\Controllers\TeamOnboardingController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -39,5 +40,10 @@ Route::middleware('auth')->group(function () {
     // Game Protected Routes (accessible only if user HAS a team)
     Route::middleware('has.team')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Garage & Car Management
+        Route::get('/garage', [GarageController::class, 'index'])->name('garage.index');
+        Route::get('/garage/{car}', [GarageController::class, 'show'])->name('garage.show');
+        Route::post('/garage/{car}/set-active', [GarageController::class, 'setActive'])->name('garage.set-active');
     });
 });

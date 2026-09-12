@@ -67,4 +67,20 @@ class Team extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    /**
+     * Get the team's designated active race car.
+     */
+    public function activeCar(): ?Car
+    {
+        return $this->cars()->where('is_active', true)->first();
+    }
+
+    /**
+     * Get the team's lead/primary driver.
+     */
+    public function primaryDriver(): ?Driver
+    {
+        return $this->drivers()->first();
+    }
 }

@@ -16,10 +16,19 @@ class DashboardController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        $team = $user->team()->with(['cars', 'drivers'])->firstOrFail();
+        $team = $user->team()->with(['cars.upgrades', 'drivers'])->firstOrFail();
+
+        $activeCar = $team->activeCar();
+        $primaryDriver = $team->primaryDriver();
+        $isRaceReady = ($activeCar !== null && $primaryDriver !== null);
 
         return view('dashboard.index', [
             'team' => $team,
+            'activeCar' => $activeCar,
+            'primaryDriver' => $primaryDriver,
+            'isRaceReady' => $isRaceReady,
+            'totalCars' => $team->cars->count(),
+            'totalDrivers' => $team->drivers->count(),
         ]);
     }
 }

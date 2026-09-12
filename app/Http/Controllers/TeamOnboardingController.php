@@ -79,7 +79,10 @@ class TeamOnboardingController extends Controller
                 ->first();
 
             if ($kuroGt) {
-                $kuroGt->update(['team_id' => $newTeam->id]);
+                $kuroGt->update([
+                    'team_id' => $newTeam->id,
+                    'is_active' => true,
+                ]);
             } else {
                 Car::create([
                     'team_id' => $newTeam->id,
@@ -91,6 +94,7 @@ class TeamOnboardingController extends Controller
                     'reliability' => 75,
                     'level' => 1,
                     'purchase_price' => 25000,
+                    'is_active' => true,
                 ]);
             }
 
