@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\GarageController;
+use App\Http\Controllers\RaceController;
 use App\Http\Controllers\TeamOnboardingController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -57,5 +58,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/drivers/market/{driver}/hire', [DriverController::class, 'hire'])->name('drivers.hire');
         Route::get('/drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
         Route::post('/drivers/{driver}/set-lead', [DriverController::class, 'setLead'])->name('drivers.set-lead');
+
+        // Grand Prix Race System & Preparation
+        Route::get('/races', [RaceController::class, 'index'])->name('races.index');
+        Route::get('/races/{race}', [RaceController::class, 'show'])->name('races.show');
+        Route::post('/races/{race}/enter', [RaceController::class, 'enter'])->name('races.enter');
     });
 });

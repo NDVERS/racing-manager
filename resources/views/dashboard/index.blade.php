@@ -204,21 +204,21 @@
             </p>
         </a>
 
-        <!-- Race Hub (Task 5) -->
-        <div class="bg-zinc-900/60 border border-zinc-800/60 rounded p-5 opacity-75">
+        <!-- Race Hub (Active in Task 5) -->
+        <a href="{{ route('races.index') }}" class="group bg-zinc-900 border border-zinc-800 hover:border-red-500/60 rounded p-5 transition-all shadow hover:shadow-red-500/10 block">
             <div class="flex items-center justify-between mb-3">
-                <span class="w-8 h-8 rounded bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500 font-mono font-bold text-xs">
+                <span class="w-8 h-8 rounded bg-red-950 border border-red-500/30 flex items-center justify-center text-red-400 font-mono font-bold text-xs">
                     03
                 </span>
-                <span class="text-[9px] font-mono bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">TASK 5</span>
+                <span class="text-xs font-mono text-zinc-500 group-hover:text-red-400 group-hover:translate-x-1 transition-all">&rarr;</span>
             </div>
-            <h2 class="text-sm font-black text-zinc-400 uppercase font-mono tracking-wide">
+            <h2 class="text-sm font-black text-white uppercase font-mono tracking-wide group-hover:text-red-400 transition-colors">
                 Grand Prix Hub
             </h2>
-            <p class="text-xs text-zinc-500 mt-1 font-mono">
-                Select tracks, set fuel/pace strategy, and run lap-by-lap simulation.
+            <p class="text-xs text-zinc-400 mt-1 font-mono">
+                Inspect track telemetry, review prize pools, and configure race entries.
             </p>
-        </div>
+        </a>
 
         <!-- Engineering / Upgrades (Task 6) -->
         <div class="bg-zinc-900/60 border border-zinc-800/60 rounded p-5 opacity-75">
