@@ -18,7 +18,10 @@ class AuthController extends Controller
     public function showLogin(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return Auth::user()->team()->exists()
+            /** @var User $user */
+            $user = Auth::user();
+
+            return $user->team()->exists()
                 ? redirect()->route('dashboard')
                 : redirect()->route('team.create');
         }
@@ -62,7 +65,10 @@ class AuthController extends Controller
     public function showRegister(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return Auth::user()->team()->exists()
+            /** @var User $user */
+            $user = Auth::user();
+
+            return $user->team()->exists()
                 ? redirect()->route('dashboard')
                 : redirect()->route('team.create');
         }
