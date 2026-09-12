@@ -250,6 +250,10 @@
                     Next Grand Prix Schedule &rarr;
                 </a>
 
+                <a href="{{ route('standings') }}" class="w-full text-center py-2.5 px-4 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-amber-300 hover:text-amber-200 text-xs font-mono font-bold uppercase transition block">
+                    View Championship Standings &rarr;
+                </a>
+
                 <a href="{{ route('dashboard') }}" class="w-full text-center py-2.5 px-4 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-mono font-bold uppercase transition block">
                     Return to Paddock Dashboard
                 </a>

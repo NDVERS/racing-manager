@@ -64,6 +64,12 @@
                                     RACES
                                 </a>
                                 <a
+                                    href="{{ route('standings') }}"
+                                    class="px-2.5 py-1.5 rounded-md transition-colors {{ request()->routeIs('standings') || request()->routeIs('championship') ? 'bg-zinc-800 text-orange-400 font-bold border border-zinc-700/80 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
+                                >
+                                    STANDINGS
+                                </a>
+                                <a
                                     href="{{ route('races.history') }}"
                                     class="px-2.5 py-1.5 rounded-md transition-colors {{ request()->routeIs('races.history') || request()->routeIs('history') || request()->routeIs('race-results.*') ? 'bg-zinc-800 text-orange-400 font-bold border border-zinc-700/80 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
                                 >
@@ -174,6 +180,12 @@
                             class="px-3 py-1 rounded {{ request()->routeIs('races.*') && !request()->routeIs('races.history') ? 'bg-zinc-800 text-orange-400 font-bold' : 'text-zinc-400' }}"
                         >
                             RACES
+                        </a>
+                        <a
+                            href="{{ route('standings') }}"
+                            class="px-3 py-1 rounded {{ request()->routeIs('standings') || request()->routeIs('championship') ? 'bg-zinc-800 text-orange-400 font-bold' : 'text-zinc-400' }}"
+                        >
+                            STANDINGS
                         </a>
                         <a
                             href="{{ route('races.history') }}"

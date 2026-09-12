@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Team;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\ChampionshipService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,7 @@ class DashboardController extends Controller
     /**
      * Display the team manager dashboard.
      */
-    public function index(Request $request): View
+    public function index(Request $request, ChampionshipService $championshipService): View
     {
         /** @var User $user */
         $user = Auth::user();
@@ -58,6 +59,7 @@ class DashboardController extends Controller
         ];
 
         $activeSponsors = $team->teamSponsors()->where('is_active', true)->with('sponsor')->get();
+        $seasonOverview = $championshipService->getSeasonOverview($team);
 
         return view('dashboard.index', [
             'team' => $team,
@@ -68,6 +70,7 @@ class DashboardController extends Controller
             'totalDrivers' => $team->drivers->count(),
             'activeSponsors' => $activeSponsors,
             'directives' => $directives,
+            'season' => $seasonOverview,
         ]);
     }
 

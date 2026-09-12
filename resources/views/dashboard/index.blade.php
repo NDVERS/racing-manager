@@ -24,8 +24,20 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
+                <!-- Championship Standing Card -->
+                <a href="{{ route('standings') }}" class="bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-800 hover:border-orange-500/50 transition-all rounded px-4 py-3 min-w-[150px] block group">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-telemetry font-bold text-zinc-400 uppercase tracking-wider group-hover:text-orange-400">CHAMPIONSHIP</span>
+                        <span class="text-[10px] text-zinc-500 group-hover:text-orange-400">&rarr;</span>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-telemetry font-black text-white mt-0.5 flex items-baseline gap-1.5">
+                        <span class="text-orange-400">P{{ $season['player_constructor_rank'] }}</span>
+                        <span class="text-xs text-zinc-400 font-normal">({{ $season['player_constructor_points'] }} PTS)</span>
+                    </div>
+                </a>
+
                 <!-- Money Card -->
-                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-4 py-3 min-w-[150px]">
+                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-4 py-3 min-w-[140px]">
                     <div class="text-[10px] font-telemetry font-bold text-zinc-400 uppercase tracking-wider">TEAM TREASURY</div>
                     <div class="text-xl sm:text-2xl font-telemetry font-black text-amber-400 mt-0.5">
                         {{ number_format($team->money) }} <span class="text-xs text-zinc-500 font-normal">CR</span>
@@ -33,7 +45,7 @@
                 </div>
 
                 <!-- Reputation Card -->
-                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-4 py-3 min-w-[130px]">
+                <div class="bg-zinc-950/90 border border-zinc-800 rounded px-4 py-3 min-w-[120px]">
                     <div class="text-[10px] font-telemetry font-bold text-zinc-400 uppercase tracking-wider">REPUTATION</div>
                     <div class="text-xl sm:text-2xl font-telemetry font-black text-cyan-400 mt-0.5">
                         {{ number_format($team->reputation) }} <span class="text-xs text-zinc-500 font-normal">PTS</span>
@@ -359,7 +371,7 @@
     </div>
 
     <!-- Quick Actions / Command Deck Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Garage Link -->
         <a href="{{ route('garage.index') }}" class="group bg-zinc-900 border border-zinc-800 hover:border-orange-500/60 rounded p-4 transition-all shadow hover:shadow-orange-500/10 block">
             <div class="flex items-center justify-between mb-2">
@@ -424,11 +436,27 @@
             </p>
         </a>
 
+        <!-- Championship Standings -->
+        <a href="{{ route('standings') }}" class="group bg-zinc-900 border border-zinc-800 hover:border-amber-400/60 rounded p-4 transition-all shadow hover:shadow-amber-400/10 block">
+            <div class="flex items-center justify-between mb-2">
+                <span class="w-7 h-7 rounded bg-amber-950 border border-amber-400/30 flex items-center justify-center text-amber-300 font-telemetry font-bold text-xs">
+                    05
+                </span>
+                <span class="text-xs text-zinc-500 group-hover:text-amber-300 group-hover:translate-x-1 transition-all">&rarr;</span>
+            </div>
+            <h2 class="text-xs font-bold text-white uppercase tracking-wide group-hover:text-amber-300 transition-colors">
+                Championship Standings
+            </h2>
+            <p class="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                Constructors & Drivers ladder.
+            </p>
+        </a>
+
         <!-- Engineering / Upgrades -->
         <a href="{{ $activeCar ? route('garage.show', $activeCar) : route('garage.index') }}" class="group bg-zinc-900 border border-zinc-800 hover:border-emerald-500/60 rounded p-4 transition-all shadow hover:shadow-emerald-500/10 block">
             <div class="flex items-center justify-between mb-2">
                 <span class="w-7 h-7 rounded bg-emerald-950 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-telemetry font-bold text-xs">
-                    05
+                    06
                 </span>
                 <span class="text-xs text-zinc-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all">&rarr;</span>
             </div>
@@ -444,7 +472,7 @@
         <a href="{{ route('races.history') }}" class="group bg-zinc-900 border border-zinc-800 hover:border-purple-500/60 rounded p-4 transition-all shadow hover:shadow-purple-500/10 block">
             <div class="flex items-center justify-between mb-2">
                 <span class="w-7 h-7 rounded bg-purple-950 border border-purple-500/30 flex items-center justify-center text-purple-400 font-telemetry font-bold text-xs">
-                    06
+                    07
                 </span>
                 <span class="text-xs text-zinc-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all">&rarr;</span>
             </div>
@@ -453,6 +481,22 @@
             </h2>
             <p class="text-[11px] text-zinc-400 mt-1 leading-relaxed">
                 Podiums, points & history.
+            </p>
+        </a>
+
+        <!-- Handbook Guide -->
+        <a href="{{ route('guide') }}" class="group bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded p-4 transition-all shadow block">
+            <div class="flex items-center justify-between mb-2">
+                <span class="w-7 h-7 rounded bg-zinc-950 border border-zinc-700 flex items-center justify-center text-zinc-400 font-telemetry font-bold text-xs">
+                    08
+                </span>
+                <span class="text-xs text-zinc-500 group-hover:text-white group-hover:translate-x-1 transition-all">&rarr;</span>
+            </div>
+            <h2 class="text-xs font-bold text-white uppercase tracking-wide group-hover:text-white transition-colors">
+                Team Handbook
+            </h2>
+            <p class="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                Operations & physics guide.
             </p>
         </a>
     </div>

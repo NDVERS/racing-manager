@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChampionshipController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\GarageController;
@@ -66,6 +67,10 @@ Route::middleware('auth')->group(function () {
         // Commercial Sponsors & Partnerships
         Route::get('/sponsors', [SponsorController::class, 'index'])->name('sponsors.index');
         Route::post('/sponsors/{sponsor}/sign', [SponsorController::class, 'sign'])->name('sponsors.sign');
+
+        // Season Championship Standings
+        Route::get('/standings', [ChampionshipController::class, 'index'])->name('standings');
+        Route::get('/championship', [ChampionshipController::class, 'index'])->name('championship');
 
         // Grand Prix Race System & Simulation
         Route::get('/races', [RaceController::class, 'index'])->name('races.index');
