@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/garage', [GarageController::class, 'index'])->name('garage.index');
         Route::get('/garage/{car}', [GarageController::class, 'show'])->name('garage.show');
         Route::post('/garage/{car}/set-active', [GarageController::class, 'setActive'])->name('garage.set-active');
+        Route::post('/garage/{car}/upgrades', [GarageController::class, 'purchaseUpgrade'])->name('garage.upgrades.purchase');
 
         // Driver System & Market
         Route::get('/drivers', [DriverController::class, 'index'])->name('drivers.index');

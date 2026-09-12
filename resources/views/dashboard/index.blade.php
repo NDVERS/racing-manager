@@ -220,21 +220,22 @@
             </p>
         </a>
 
-        <!-- Engineering / Upgrades (Task 6) -->
-        <div class="bg-zinc-900/60 border border-zinc-800/60 rounded p-5 opacity-75">
+        <!-- Engineering / Upgrades (Active in Task 8) -->
+        <a href="{{ $activeCar ? route('garage.show', $activeCar) : route('garage.index') }}" class="group bg-zinc-900 border border-zinc-800 hover:border-amber-500/60 rounded p-5 transition-all shadow hover:shadow-amber-500/10 block">
             <div class="flex items-center justify-between mb-3">
-                <span class="w-8 h-8 rounded bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500 font-mono font-bold text-xs">
+                <span class="w-8 h-8 rounded bg-amber-950 border border-amber-500/30 flex items-center justify-center text-amber-400 font-mono font-bold text-xs">
                     04
                 </span>
-                <span class="text-[9px] font-mono bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">TASK 6</span>
+                <span class="text-xs font-mono text-zinc-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-all">&rarr;</span>
             </div>
-            <h2 class="text-sm font-black text-zinc-400 uppercase font-mono tracking-wide">
+            <h2 class="text-sm font-black text-white uppercase font-mono tracking-wide group-hover:text-amber-400 transition-colors">
                 R&D Upgrades
             </h2>
-            <p class="text-xs text-zinc-500 mt-1 font-mono">
-                Engine tuning, aero upgrades, suspension, and reliability parts.
+            <p class="text-xs text-zinc-400 mt-1 font-mono">
+                Powertrain, drivetrain, aero, brakes, and reliability packages.
             </p>
-        </div>
+        </a>
+
     </div>
 </div>
 @endsection

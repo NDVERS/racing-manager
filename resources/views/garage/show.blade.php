@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Technical Inspection - ' . $car->name)
+@section('title', 'Engineering Workshop - ' . $car->name)
 
 @section('content')
 <div class="space-y-6">
@@ -8,7 +8,7 @@
     <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-xl relative overflow-hidden">
         <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-400 to-red-600"></div>
 
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <div class="flex items-center gap-2 mb-1 text-xs font-mono text-zinc-400">
                     <a href="{{ route('dashboard') }}" class="hover:text-orange-400 transition-colors">PADDOCK</a>
@@ -17,12 +17,12 @@
                     <span>/</span>
                     <span class="text-orange-400 font-bold uppercase">CHASSIS #{{ str_pad($car->id, 4, '0', STR_PAD_LEFT) }}</span>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <h1 class="text-2xl sm:text-3xl font-black text-white uppercase font-mono tracking-tight">
                         {{ $car->name }}
                     </h1>
-                    <span class="text-xs font-mono font-bold px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
-                        LEVEL {{ $car->level }}
+                    <span class="text-xs font-mono font-bold px-2.5 py-1 rounded bg-zinc-800 text-amber-400 border border-zinc-700">
+                        CHASSIS TIER {{ $car->level }}
                     </span>
                     @if($car->is_active)
                         <span class="text-xs font-mono font-black uppercase tracking-wider bg-emerald-950 border border-emerald-500/50 text-emerald-400 px-2.5 py-1 rounded flex items-center gap-1.5 shadow-sm">
@@ -37,16 +37,23 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
-                <a href="{{ route('garage.index') }}" class="px-4 py-2 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-mono font-bold uppercase transition flex items-center gap-1.5">
-                    <span>&larr; Back to Fleet</span>
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-right">
+                    <div class="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">TREASURY BALANCE</div>
+                    <div class="text-sm font-mono font-black text-amber-400">
+                        {{ number_format($team->money) }} <span class="text-xs text-zinc-500">CR</span>
+                    </div>
+                </div>
+
+                <a href="{{ route('garage.index') }}" class="px-4 py-2.5 rounded bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-mono font-bold uppercase transition flex items-center gap-1.5">
+                    <span>&larr; Fleet</span>
                 </a>
 
                 @if(!$car->is_active)
                     <form method="POST" action="{{ route('garage.set-active', $car) }}">
                         @csrf
-                        <button type="submit" class="px-4 py-2 rounded bg-orange-600 hover:bg-orange-500 text-white text-xs font-mono font-bold tracking-wider uppercase transition shadow-md cursor-pointer">
-                            Assign as Active Car
+                        <button type="submit" class="px-4 py-2.5 rounded bg-orange-600 hover:bg-orange-500 text-white text-xs font-mono font-bold tracking-wider uppercase transition shadow-md cursor-pointer">
+                            Assign Active
                         </button>
                     </form>
                 @endif
@@ -56,7 +63,7 @@
 
     <!-- Main Telemetry & Technical Specs Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Left 2 Cols: Detailed Telemetry Stat Gauges -->
+        <!-- Left 2 Cols: Telemetry Gauges + R&D Engineering Workshop -->
         <div class="lg:col-span-2 space-y-6">
             <!-- Telemetry Performance Sheet -->
             <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-lg">
@@ -71,113 +78,167 @@
                     </div>
                 </div>
 
-                <div class="space-y-5">
+                <div class="space-y-4">
                     <!-- Top Speed Gauge -->
-                    <div class="bg-zinc-950/70 border border-zinc-800/80 rounded p-4">
-                        <div class="flex items-center justify-between mb-2">
+                    <div class="bg-zinc-950/70 border border-zinc-800/80 rounded p-3.5">
+                        <div class="flex items-center justify-between mb-1.5">
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-mono font-bold uppercase text-blue-400">01 // TOP SPEED</span>
-                                <span class="text-[10px] font-mono text-zinc-500">Straight-line velocity & aerodynamic drag</span>
+                                <span class="text-[10px] font-mono text-zinc-500">Straight-line velocity & peak RPM</span>
                             </div>
                             <span class="text-sm font-mono font-black text-white">{{ $car->speed }} <span class="text-xs text-zinc-500 font-normal">/ 100</span></span>
                         </div>
-                        <div class="w-full bg-zinc-900 rounded h-3 overflow-hidden border border-zinc-800">
+                        <div class="w-full bg-zinc-900 rounded h-2.5 overflow-hidden border border-zinc-800">
                             <div class="bg-blue-500 h-full rounded transition-all duration-500" style="width: {{ min(100, $car->speed) }}%"></div>
                         </div>
                     </div>
 
                     <!-- Acceleration Gauge -->
-                    <div class="bg-zinc-950/70 border border-zinc-800/80 rounded p-4">
-                        <div class="flex items-center justify-between mb-2">
+                    <div class="bg-zinc-950/70 border border-zinc-800/80 rounded p-3.5">
+                        <div class="flex items-center justify-between mb-1.5">
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-mono font-bold uppercase text-cyan-400">02 // ACCELERATION</span>
                                 <span class="text-[10px] font-mono text-zinc-500">Torque delivery & launch response</span>
                             </div>
                             <span class="text-sm font-mono font-black text-white">{{ $car->acceleration }} <span class="text-xs text-zinc-500 font-normal">/ 100</span></span>
                         </div>
-                        <div class="w-full bg-zinc-900 rounded h-3 overflow-hidden border border-zinc-800">
+                        <div class="w-full bg-zinc-900 rounded h-2.5 overflow-hidden border border-zinc-800">
                             <div class="bg-cyan-500 h-full rounded transition-all duration-500" style="width: {{ min(100, $car->acceleration) }}%"></div>
                         </div>
                     </div>
 
                     <!-- Handling Gauge -->
-                    <div class="bg-zinc-950/70 border border-zinc-800/80 rounded p-4">
-                        <div class="flex items-center justify-between mb-2">
+                    <div class="bg-zinc-950/70 border border-zinc-800/80 rounded p-3.5">
+                        <div class="flex items-center justify-between mb-1.5">
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-mono font-bold uppercase text-emerald-400">03 // CORNERING HANDLING</span>
-                                <span class="text-[10px] font-mono text-zinc-500">Downforce, grip & steering response</span>
+                                <span class="text-[10px] font-mono text-zinc-500">Downforce, aero balance & grip</span>
                             </div>
                             <span class="text-sm font-mono font-black text-white">{{ $car->handling }} <span class="text-xs text-zinc-500 font-normal">/ 100</span></span>
                         </div>
-                        <div class="w-full bg-zinc-900 rounded h-3 overflow-hidden border border-zinc-800">
+                        <div class="w-full bg-zinc-900 rounded h-2.5 overflow-hidden border border-zinc-800">
                             <div class="bg-emerald-500 h-full rounded transition-all duration-500" style="width: {{ min(100, $car->handling) }}%"></div>
                         </div>
                     </div>
 
                     <!-- Braking Gauge -->
-                    <div class="bg-zinc-950/70 border border-zinc-800/80 rounded p-4">
-                        <div class="flex items-center justify-between mb-2">
+                    <div class="bg-zinc-950/70 border border-zinc-800/80 rounded p-3.5">
+                        <div class="flex items-center justify-between mb-1.5">
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-mono font-bold uppercase text-amber-400">04 // BRAKING EFFICIENCY</span>
-                                <span class="text-[10px] font-mono text-zinc-500">Deceleration rate & heat dissipation</span>
+                                <span class="text-[10px] font-mono text-zinc-500">Deceleration rate & heat fade prevention</span>
                             </div>
                             <span class="text-sm font-mono font-black text-white">{{ $car->braking }} <span class="text-xs text-zinc-500 font-normal">/ 100</span></span>
                         </div>
-                        <div class="w-full bg-zinc-900 rounded h-3 overflow-hidden border border-zinc-800">
+                        <div class="w-full bg-zinc-900 rounded h-2.5 overflow-hidden border border-zinc-800">
                             <div class="bg-amber-500 h-full rounded transition-all duration-500" style="width: {{ min(100, $car->braking) }}%"></div>
                         </div>
                     </div>
 
                     <!-- Reliability Gauge -->
-                    <div class="bg-zinc-950/70 border border-zinc-800/80 rounded p-4">
-                        <div class="flex items-center justify-between mb-2">
+                    <div class="bg-zinc-950/70 border border-zinc-800/80 rounded p-3.5">
+                        <div class="flex items-center justify-between mb-1.5">
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-mono font-bold uppercase text-emerald-400">05 // MECHANICAL RELIABILITY</span>
-                                <span class="text-[10px] font-mono text-zinc-500">Component wear resistance & failure prevention</span>
+                                <span class="text-xs font-mono font-bold uppercase text-purple-400">05 // MECHANICAL RELIABILITY</span>
+                                <span class="text-[10px] font-mono text-zinc-500">Structural integrity & failure resistance</span>
                             </div>
-                            <span class="text-sm font-mono font-black text-emerald-400">{{ $car->reliability }}%</span>
+                            <span class="text-sm font-mono font-black text-purple-400">{{ $car->reliability }}%</span>
                         </div>
-                        <div class="w-full bg-zinc-900 rounded h-3 overflow-hidden border border-zinc-800">
-                            <div class="bg-emerald-400 h-full rounded transition-all duration-500" style="width: {{ min(100, $car->reliability) }}%"></div>
+                        <div class="w-full bg-zinc-900 rounded h-2.5 overflow-hidden border border-zinc-800">
+                            <div class="bg-purple-500 h-full rounded transition-all duration-500" style="width: {{ min(100, $car->reliability) }}%"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Installed Upgrade Parts Matrix -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-lg">
-                <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-800">
+            <!-- R&D Engineering Workshop (Car Upgrade Matrix) -->
+            <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-lg relative">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-zinc-800 gap-2">
                     <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded bg-cyan-500"></span>
-                        <h2 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Installed Upgrade Packages</h2>
+                        <span class="w-2.5 h-2.5 rounded bg-orange-500 animate-pulse"></span>
+                        <div>
+                            <h2 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Pit-Wall R&D Engineering Workshop</h2>
+                            <p class="text-[11px] font-mono text-zinc-400">Fabricate and calibrate high-performance component packages (Max Tier {{ \App\Models\CarUpgrade::MAX_LEVEL }}).</p>
+                        </div>
                     </div>
-                    <span class="text-xs font-mono text-zinc-400">{{ $upgrades->count() }} Mod(s) Active</span>
+                    <div class="text-xs font-mono text-zinc-400">
+                        Active Packages: <span class="text-orange-400 font-bold">{{ $upgrades->count() }} / 5</span>
+                    </div>
                 </div>
 
-                @if($upgrades->count() > 0)
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        @foreach($upgrades as $upgrade)
-                            <div class="bg-zinc-950/80 border border-zinc-800 rounded p-3.5 flex items-center justify-between">
-                                <div>
-                                    <div class="text-xs font-mono font-bold text-white uppercase">{{ ucfirst($upgrade->part_type) }} Package</div>
-                                    <div class="text-[10px] font-mono text-zinc-500 uppercase">Upgrade Level {{ $upgrade->level }}</div>
+                <div class="space-y-4">
+                    @foreach($partsMatrix as $partKey => $part)
+                        <div class="bg-zinc-950/80 border {{ $part['is_max'] ? 'border-emerald-500/40' : 'border-zinc-800' }} rounded p-4 transition-all">
+                            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                <!-- Component Info & Description -->
+                                <div class="space-y-1.5 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="text-sm font-mono font-bold text-white uppercase">{{ $part['name'] }}</h3>
+                                        @if($part['is_max'])
+                                            <span class="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500/50 text-emerald-400">
+                                                MAX TIER
+                                            </span>
+                                        @else
+                                            <span class="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                                TIER {{ $part['current_level'] }} / {{ $part['max_level'] }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <p class="text-xs font-mono text-zinc-400">{{ $part['description'] }}</p>
+
+                                    <!-- Progress Pips -->
+                                    <div class="flex items-center gap-1.5 pt-1">
+                                        @for($lvl = 1; $lvl <= $part['max_level']; $lvl++)
+                                            <div class="h-1.5 flex-1 rounded-sm {{ $lvl <= $part['current_level'] ? 'bg-orange-500 shadow-sm shadow-orange-500/50' : 'bg-zinc-800' }}"></div>
+                                        @endfor
+                                    </div>
                                 </div>
-                                <div class="text-right">
-                                    @if(is_array($upgrade->stat_increases))
-                                        @foreach($upgrade->stat_increases as $stat => $val)
-                                            <span class="text-xs font-mono font-bold text-emerald-400 block">+{{ $val }} {{ strtoupper($stat) }}</span>
-                                        @endforeach
+
+                                <!-- Stat Projection & Action Button -->
+                                <div class="flex flex-col sm:flex-row sm:items-center lg:flex-col lg:items-end gap-3 min-w-[220px]">
+                                    <!-- Stat Delta Preview -->
+                                    <div class="text-left sm:text-right lg:text-right">
+                                        <div class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                                            {{ $part['stat_name'] }}
+                                        </div>
+                                        <div class="text-xs font-mono font-bold">
+                                            <span class="text-white">{{ $part['current_stat'] }}</span>
+                                            @if(!$part['is_max'])
+                                                <span class="text-zinc-500 mx-1">&rarr;</span>
+                                                <span class="text-emerald-400">{{ $part['projected_stat'] }}</span>
+                                                <span class="text-emerald-400 font-normal">(+{{ $part['delta'] }})</span>
+                                            @else
+                                                <span class="text-emerald-400 ml-1.5 font-bold">[MAX]</span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <!-- Upgrade Form or Status Button -->
+                                    @if($part['is_max'])
+                                        <div class="px-4 py-2 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold uppercase text-center w-full sm:w-auto">
+                                            Fully Upgraded
+                                        </div>
+                                    @else
+                                        <form method="POST" action="{{ route('garage.upgrades.purchase', $car) }}" class="w-full sm:w-auto">
+                                            @csrf
+                                            <input type="hidden" name="part_type" value="{{ $partKey }}">
+                                            @if($part['can_afford'])
+                                                <button type="submit" class="w-full px-4 py-2 rounded bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white text-xs font-mono font-black uppercase tracking-wider transition shadow cursor-pointer flex items-center justify-center gap-1.5">
+                                                    <span>UPGRADE TIER {{ $part['next_level'] }}</span>
+                                                    <span class="text-orange-200 text-[11px] font-normal">({{ number_format($part['next_cost']) }} CR)</span>
+                                                </button>
+                                            @else
+                                                <button type="button" disabled class="w-full px-4 py-2 rounded bg-zinc-800 text-zinc-500 text-xs font-mono font-bold uppercase tracking-wider cursor-not-allowed border border-zinc-700/50 flex items-center justify-center gap-1.5" title="Insufficient Credits">
+                                                    <span>NEED {{ number_format($part['next_cost']) }} CR</span>
+                                                </button>
+                                            @endif
+                                        </form>
                                     @endif
                                 </div>
                             </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="bg-zinc-950/60 border border-zinc-800/80 rounded p-6 text-center">
-                        <p class="text-xs font-mono text-zinc-400">No aftermarket R&D upgrades installed on this chassis yet.</p>
-                        <p class="text-[11px] font-mono text-zinc-500 mt-1">Car upgrade mechanics will be unlocked during R&D Engineering development (Task 6).</p>
-                    </div>
-                @endif
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </div>
 
@@ -235,6 +296,19 @@
                             <span>Currently Active for Racing</span>
                         </div>
                     @endif
+                </div>
+            </div>
+
+            <!-- Engineering Workshop Guidance Card -->
+            <div class="bg-zinc-900 border border-zinc-800 rounded p-5 shadow-lg">
+                <div class="text-xs font-mono font-bold uppercase tracking-wider text-orange-400 mb-3 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-orange-400"></span>
+                    <span>Engineering R&D Notes</span>
+                </div>
+                <div class="space-y-2 text-xs font-mono text-zinc-400 leading-relaxed">
+                    <p>&bull; Component upgrades directly increase car attributes during Grand Prix race simulations.</p>
+                    <p>&bull; Every 3 upgrade levels completed elevates the overall Chassis Tier.</p>
+                    <p>&bull; Higher tiers cost exponentially more Credits. Budget race prize money wisely.</p>
                 </div>
             </div>
 

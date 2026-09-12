@@ -98,7 +98,7 @@ class GarageTest extends TestCase
         $response->assertOk();
         $response->assertViewIs('garage.show');
         $response->assertSee('Velocity V8');
-        $response->assertSee('Engine Package');
+        $response->assertSee('Powertrain & Turbo');
         $response->assertSee('85'); // Speed
         $response->assertSee('80'); // Acceleration
         $response->assertSee('95%'); // Reliability
