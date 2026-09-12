@@ -7,6 +7,13 @@
 
     <title>{{ config('app.name', 'Racing Manager') }} - @yield('title', 'Paddock')</title>
 
+    <!-- Favicon & App Branding Icons -->
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="alternate icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+    <meta name="theme-color" content="#09090b">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|jetbrains-mono:400,500,600,700" rel="stylesheet" />
@@ -21,9 +28,7 @@
                 <!-- Left: Logo & Navigation Tabs -->
                 <div class="flex items-center gap-4 xl:gap-6 min-w-0">
                     <a href="{{ route('home') }}" class="flex items-center gap-2.5 group shrink-0">
-                        <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center font-black text-white text-sm shadow-md shadow-orange-600/20 group-hover:scale-105 transition-transform font-mono">
-                            RM
-                        </span>
+                        <x-application-logo class="w-8 h-8 rounded-lg shadow-md shadow-orange-600/20 group-hover:scale-105 transition-transform shrink-0" />
                         <div class="hidden sm:flex flex-col leading-none">
                             <span class="font-black tracking-wider text-xs text-white uppercase font-mono">Racing Manager</span>
                             <span class="text-[9px] text-zinc-400 font-telemetry tracking-widest uppercase">Paddock OS</span>

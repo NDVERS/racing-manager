@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c1917"/>
+      <stop offset="50%" stop-color="#09090b"/>
+      <stop offset="100%" stop-color="#040405"/>
+    </linearGradient>
+    
+    <!-- Primary Apex Gradient (Orange to Crimson) -->
+    <linearGradient id="apexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="50%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+
+    <!-- Cyan Telemetry Glow -->
+    <linearGradient id="cyanGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+
+    <!-- Subtle Border Stroke Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ea580c"/>
+      <stop offset="50%" stop-color="#27272a"/>
+      <stop offset="100%" stop-color="#09090b"/>
+    </linearGradient>
+
+    <!-- Filter for telemetry glowing dots -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Squircle Base with Racing Border -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="8"/>
+  
+  <!-- Subtle Telemetry Grid & Speed Hash Marks -->
+  <path d="M 64 256 L 448 256" stroke="#27272a" stroke-width="2" stroke-dasharray="6 6" opacity="0.6"/>
+  <path d="M 256 64 L 256 448" stroke="#27272a" stroke-width="2" stroke-dasharray="6 6" opacity="0.6"/>
+  
+  <!-- Sector 1 / 2 / 3 Speed Notches -->
+  <line x1="80" y1="80" x2="100" y2="80" stroke="#f97316" stroke-width="4" stroke-linecap="round"/>
+  <line x1="80" y1="92" x2="120" y2="92" stroke="#f97316" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+  <line x1="80" y1="104" x2="94" y2="104" stroke="#f97316" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- Telemetry Status Lights Top Right -->
+  <circle cx="416" cy="88" r="12" fill="#22c55e" filter="url(#glow)"/>
+  <circle cx="380" cy="88" r="9" fill="#f97316"/>
+  <circle cx="348" cy="88" r="7" fill="#38bdf8"/>
+
+  <!-- Dual-Car Velocity Apex Slashes (Chevron Angles) -->
+  <path d="M 96 352 L 156 160 L 192 160 L 132 352 Z" fill="url(#cyanGrad)" opacity="0.95"/>
+  <path d="M 152 352 L 212 160 L 248 160 L 188 352 Z" fill="url(#apexGrad)"/>
+
+  <!-- High-Tech Geometric Monogram "R" -->
+  <path d="M 216 160 L 336 160 C 384 160 416 186 416 230 C 416 266 390 292 352 300 L 416 352 L 366 352 L 310 306 L 268 306 L 252 352 L 216 352 Z M 274 200 L 260 266 L 332 266 C 360 266 376 254 376 232 C 376 212 360 200 332 200 Z" fill="#ffffff"/>
+
+  <!-- Racing Accent Slash on R -->
+  <polygon points="296,214 340,214 328,252 284,252" fill="url(#apexGrad)"/>
+</svg>

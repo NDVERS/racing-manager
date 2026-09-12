@@ -161,13 +161,130 @@
             </div>
 
             <!-- Pit-Wall Tactical Strategy Selector Deck -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-lg">
+            <div x-data="{
+                c1Compound: '{{ ($race->weather === 'wet') ? 'wet' : 'medium' }}',
+                c1Mode: 'balanced',
+                c2Compound: '{{ ($race->weather === 'wet') ? 'wet' : 'medium' }}',
+                c2Mode: 'balanced',
+                activePreset: null,
+
+                applyPreset(name) {
+                    this.activePreset = name;
+                    const isWet = {{ $race->weather === 'wet' ? 'true' : 'false' }};
+                    if (name === 'aggressive_split') {
+                        this.c1Compound = 'soft';
+                        this.c1Mode = 'push';
+                        this.c2Compound = 'medium';
+                        this.c2Mode = 'balanced';
+                    } else if (name === 'safe_conserve') {
+                        this.c1Compound = isWet ? 'wet' : 'hard';
+                        this.c1Mode = 'conserve';
+                        this.c2Compound = isWet ? 'wet' : 'hard';
+                        this.c2Mode = 'conserve';
+                    } else if (name === 'balanced_standard') {
+                        this.c1Compound = isWet ? 'wet' : 'medium';
+                        this.c1Mode = 'balanced';
+                        this.c2Compound = isWet ? 'wet' : 'medium';
+                        this.c2Mode = 'balanced';
+                    } else if (name === 'wet_weather') {
+                        this.c1Compound = 'wet';
+                        this.c1Mode = 'balanced';
+                        this.c2Compound = 'wet';
+                        this.c2Mode = 'balanced';
+                    }
+                }
+            }" class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-lg">
                 <div class="flex items-center justify-between pb-4 mb-5 border-b border-zinc-800">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded bg-cyan-500 animate-pulse"></span>
                         <h2 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Pit-Wall Strategy Selector</h2>
                     </div>
                     <span class="text-xs font-mono text-zinc-400">Split-Strategy Calibration</span>
+                </div>
+
+                <!-- 1-Click Strategy Presets Bar -->
+                <div class="mb-6 p-4 rounded bg-zinc-950/90 border border-zinc-800/90">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono font-black uppercase text-amber-400 tracking-wider">⚡ 1-Click Strategy Presets</span>
+                            <span class="text-[9px] font-mono text-zinc-500 uppercase">Quick Calibration</span>
+                        </div>
+                        @if($race->weather === 'wet')
+                            <span class="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/80 border border-blue-500/40 px-2 py-0.5 rounded flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></span>
+                                <span>Rain Recommended: Wet Protocol</span>
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-mono text-xs">
+                        <!-- Preset 1: Aggressive Split -->
+                        <button type="button"
+                            @click="applyPreset('aggressive_split')"
+                            :class="activePreset === 'aggressive_split' ? 'border-orange-500 bg-orange-950/40 shadow-sm shadow-orange-500/20' : 'border-zinc-800 bg-zinc-900 hover:border-orange-500/60 hover:bg-zinc-850'"
+                            class="p-2.5 rounded border text-left transition cursor-pointer flex flex-col justify-between">
+                            <div>
+                                <div class="font-bold text-white flex items-center gap-1.5">
+                                    <span>🚀 Aggressive Split</span>
+                                </div>
+                                <div class="text-[9px] text-zinc-400 mt-1 leading-tight">
+                                    Car 1: Soft / Push<br>Car 2: Med / Balanced
+                                </div>
+                            </div>
+                            <div class="mt-2 text-[8px] uppercase tracking-wider text-orange-400 font-bold">Max Attack</div>
+                        </button>
+
+                        <!-- Preset 2: Safe Conserve -->
+                        <button type="button"
+                            @click="applyPreset('safe_conserve')"
+                            :class="activePreset === 'safe_conserve' ? 'border-emerald-500 bg-emerald-950/40 shadow-sm shadow-emerald-500/20' : 'border-zinc-800 bg-zinc-900 hover:border-emerald-500/60 hover:bg-zinc-850'"
+                            class="p-2.5 rounded border text-left transition cursor-pointer flex flex-col justify-between">
+                            <div>
+                                <div class="font-bold text-white flex items-center gap-1.5">
+                                    <span>🛡️ Safe Conserve</span>
+                                </div>
+                                <div class="text-[9px] text-zinc-400 mt-1 leading-tight">
+                                    {{ $race->weather === 'wet' ? 'Both: Wet / Conserve' : 'Both: Hard / Conserve' }}<br>+15 Rel / Low Wear
+                                </div>
+                            </div>
+                            <div class="mt-2 text-[8px] uppercase tracking-wider text-emerald-400 font-bold">Max Reliability</div>
+                        </button>
+
+                        <!-- Preset 3: Balanced Standard -->
+                        <button type="button"
+                            @click="applyPreset('balanced_standard')"
+                            :class="activePreset === 'balanced_standard' ? 'border-amber-500 bg-amber-950/40 shadow-sm shadow-amber-500/20' : 'border-zinc-800 bg-zinc-900 hover:border-amber-500/60 hover:bg-zinc-850'"
+                            class="p-2.5 rounded border text-left transition cursor-pointer flex flex-col justify-between">
+                            <div>
+                                <div class="font-bold text-white flex items-center gap-1.5">
+                                    <span>⚖️ Balanced Standard</span>
+                                </div>
+                                <div class="text-[9px] text-zinc-400 mt-1 leading-tight">
+                                    Both: Medium / Balanced<br>Optimal Telemetry
+                                </div>
+                            </div>
+                            <div class="mt-2 text-[8px] uppercase tracking-wider text-amber-400 font-bold">Equilibrium</div>
+                        </button>
+
+                        <!-- Preset 4: Wet Weather Protocol -->
+                        <button type="button"
+                            @click="applyPreset('wet_weather')"
+                            :class="activePreset === 'wet_weather' ? 'border-blue-500 bg-blue-950/40 shadow-sm shadow-blue-500/20 ring-1 ring-blue-500/50' : 'border-zinc-800 bg-zinc-900 hover:border-blue-500/60 hover:bg-zinc-850'"
+                            class="p-2.5 rounded border text-left transition cursor-pointer flex flex-col justify-between relative overflow-hidden">
+                            @if($race->weather === 'wet')
+                                <div class="absolute top-0 right-0 w-2 h-2 rounded-full bg-blue-400 animate-ping m-1"></div>
+                            @endif
+                            <div>
+                                <div class="font-bold text-white flex items-center gap-1.5">
+                                    <span>🌧️ Wet Protocol</span>
+                                </div>
+                                <div class="text-[9px] text-zinc-400 mt-1 leading-tight">
+                                    Both: Wet / Balanced<br>Aquaplaning Defense
+                                </div>
+                            </div>
+                            <div class="mt-2 text-[8px] uppercase tracking-wider text-blue-400 font-bold">Wet Track Spec</div>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Strategy Form (wraps inputs and triggers execution) -->
@@ -190,23 +307,23 @@
                         <div>
                             <div class="text-[11px] font-mono text-zinc-400 uppercase font-bold mb-2">Tire Compound Allocation:</div>
                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
-                                <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-red-500 cursor-pointer has-[:checked]:border-red-500 has-[:checked]:bg-red-950/30">
-                                    <input type="radio" name="tire_compound" value="soft" class="sr-only">
+                                <label :class="c1Compound === 'soft' ? 'border-red-500 bg-red-950/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-red-500 cursor-pointer has-[:checked]:border-red-500 has-[:checked]:bg-red-950/30">
+                                    <input type="radio" name="tire_compound" value="soft" x-model="c1Compound" @change="activePreset = null" class="sr-only">
                                     <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span><strong class="text-white">SOFT (C3)</strong></div>
                                     <span class="text-[9px] text-red-400 block mt-1">-0.85s Pace</span>
                                 </label>
-                                <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-amber-500 cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-950/30">
-                                    <input type="radio" name="tire_compound" value="medium" class="sr-only" {{ ($race->weather !== 'wet') ? 'checked' : '' }}>
+                                <label :class="c1Compound === 'medium' ? 'border-amber-500 bg-amber-950/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-amber-500 cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-950/30">
+                                    <input type="radio" name="tire_compound" value="medium" x-model="c1Compound" @change="activePreset = null" class="sr-only" {{ ($race->weather !== 'wet') ? 'checked' : '' }}>
                                     <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span><strong class="text-white">MEDIUM (C2)</strong></div>
                                     <span class="text-[9px] text-amber-400 block mt-1">Balanced</span>
                                 </label>
-                                <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-zinc-400 cursor-pointer has-[:checked]:border-zinc-300 has-[:checked]:bg-zinc-800/30">
-                                    <input type="radio" name="tire_compound" value="hard" class="sr-only">
+                                <label :class="c1Compound === 'hard' ? 'border-zinc-300 bg-zinc-800/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-zinc-400 cursor-pointer has-[:checked]:border-zinc-300 has-[:checked]:bg-zinc-800/30">
+                                    <input type="radio" name="tire_compound" value="hard" x-model="c1Compound" @change="activePreset = null" class="sr-only">
                                     <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-zinc-200"></span><strong class="text-white">HARD (C1)</strong></div>
                                     <span class="text-[9px] text-zinc-300 block mt-1">Durable</span>
                                 </label>
-                                <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-blue-500 cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-950/30">
-                                    <input type="radio" name="tire_compound" value="wet" class="sr-only" {{ ($race->weather === 'wet') ? 'checked' : '' }}>
+                                <label :class="c1Compound === 'wet' ? 'border-blue-500 bg-blue-950/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-blue-500 cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-950/30">
+                                    <input type="radio" name="tire_compound" value="wet" x-model="c1Compound" @change="activePreset = null" class="sr-only" {{ ($race->weather === 'wet') ? 'checked' : '' }}>
                                     <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span><strong class="text-white">WET RAIN</strong></div>
                                     <span class="text-[9px] text-blue-400 block mt-1">Rain Spec</span>
                                 </label>
@@ -217,18 +334,18 @@
                         <div>
                             <div class="text-[11px] font-mono text-zinc-400 uppercase font-bold mb-2">Engine & Driving Mode:</div>
                             <div class="grid grid-cols-3 gap-2.5 text-xs font-mono">
-                                <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-red-500 cursor-pointer has-[:checked]:border-red-500 has-[:checked]:bg-red-950/30">
-                                    <input type="radio" name="driving_mode" value="push" class="sr-only">
+                                <label :class="c1Mode === 'push' ? 'border-red-500 bg-red-950/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-red-500 cursor-pointer has-[:checked]:border-red-500 has-[:checked]:bg-red-950/30">
+                                    <input type="radio" name="driving_mode" value="push" x-model="c1Mode" @change="activePreset = null" class="sr-only">
                                     <div class="font-bold text-white">⚡ PUSH (AGGRESSIVE)</div>
                                     <span class="text-[9px] text-red-400 block mt-0.5">-0.45s / +Wear</span>
                                 </label>
-                                <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-zinc-300 cursor-pointer has-[:checked]:border-zinc-300 has-[:checked]:bg-zinc-800/30">
-                                    <input type="radio" name="driving_mode" value="balanced" class="sr-only" checked>
+                                <label :class="c1Mode === 'balanced' ? 'border-zinc-300 bg-zinc-800/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-zinc-300 cursor-pointer has-[:checked]:border-zinc-300 has-[:checked]:bg-zinc-800/30">
+                                    <input type="radio" name="driving_mode" value="balanced" x-model="c1Mode" @change="activePreset = null" class="sr-only" checked>
                                     <div class="font-bold text-white">⚙️ BALANCED</div>
                                     <span class="text-[9px] text-zinc-400 block mt-0.5">Optimal Balance</span>
                                 </label>
-                                <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-emerald-500 cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-950/30">
-                                    <input type="radio" name="driving_mode" value="conserve" class="sr-only">
+                                <label :class="c1Mode === 'conserve' ? 'border-emerald-500 bg-emerald-950/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-emerald-500 cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-950/30">
+                                    <input type="radio" name="driving_mode" value="conserve" x-model="c1Mode" @change="activePreset = null" class="sr-only">
                                     <div class="font-bold text-white">🛡️ CONSERVE (DEFENSE)</div>
                                     <span class="text-[9px] text-emerald-400 block mt-0.5">+15 Rel / -30% Deg</span>
                                 </label>
@@ -253,23 +370,23 @@
                             <div>
                                 <div class="text-[11px] font-mono text-zinc-400 uppercase font-bold mb-2">Tire Compound Allocation:</div>
                                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
-                                    <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-red-500 cursor-pointer has-[:checked]:border-red-500 has-[:checked]:bg-red-950/30">
-                                        <input type="radio" name="tire_compound_2" value="soft" class="sr-only">
+                                    <label :class="c2Compound === 'soft' ? 'border-red-500 bg-red-950/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-red-500 cursor-pointer has-[:checked]:border-red-500 has-[:checked]:bg-red-950/30">
+                                        <input type="radio" name="tire_compound_2" value="soft" x-model="c2Compound" @change="activePreset = null" class="sr-only">
                                         <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span><strong class="text-white">SOFT</strong></div>
                                         <span class="text-[9px] text-red-400 block mt-1">-0.85s Pace</span>
                                     </label>
-                                    <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-amber-500 cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-950/30">
-                                        <input type="radio" name="tire_compound_2" value="medium" class="sr-only" {{ ($race->weather !== 'wet') ? 'checked' : '' }}>
+                                    <label :class="c2Compound === 'medium' ? 'border-amber-500 bg-amber-950/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-amber-500 cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-950/30">
+                                        <input type="radio" name="tire_compound_2" value="medium" x-model="c2Compound" @change="activePreset = null" class="sr-only" {{ ($race->weather !== 'wet') ? 'checked' : '' }}>
                                         <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span><strong class="text-white">MEDIUM</strong></div>
                                         <span class="text-[9px] text-amber-400 block mt-1">Balanced</span>
                                     </label>
-                                    <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-zinc-400 cursor-pointer has-[:checked]:border-zinc-300 has-[:checked]:bg-zinc-800/30">
-                                        <input type="radio" name="tire_compound_2" value="hard" class="sr-only">
+                                    <label :class="c2Compound === 'hard' ? 'border-zinc-300 bg-zinc-800/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-zinc-400 cursor-pointer has-[:checked]:border-zinc-300 has-[:checked]:bg-zinc-800/30">
+                                        <input type="radio" name="tire_compound_2" value="hard" x-model="c2Compound" @change="activePreset = null" class="sr-only">
                                         <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-zinc-200"></span><strong class="text-white">HARD</strong></div>
                                         <span class="text-[9px] text-zinc-300 block mt-1">Durable</span>
                                     </label>
-                                    <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-blue-500 cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-950/30">
-                                        <input type="radio" name="tire_compound_2" value="wet" class="sr-only" {{ ($race->weather === 'wet') ? 'checked' : '' }}>
+                                    <label :class="c2Compound === 'wet' ? 'border-blue-500 bg-blue-950/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-blue-500 cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-950/30">
+                                        <input type="radio" name="tire_compound_2" value="wet" x-model="c2Compound" @change="activePreset = null" class="sr-only" {{ ($race->weather === 'wet') ? 'checked' : '' }}>
                                         <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span><strong class="text-white">WET RAIN</strong></div>
                                         <span class="text-[9px] text-blue-400 block mt-1">Rain Spec</span>
                                     </label>
@@ -280,18 +397,18 @@
                             <div>
                                 <div class="text-[11px] font-mono text-zinc-400 uppercase font-bold mb-2">Engine & Driving Mode:</div>
                                 <div class="grid grid-cols-3 gap-2.5 text-xs font-mono">
-                                    <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-red-500 cursor-pointer has-[:checked]:border-red-500 has-[:checked]:bg-red-950/30">
-                                        <input type="radio" name="driving_mode_2" value="push" class="sr-only">
+                                    <label :class="c2Mode === 'push' ? 'border-red-500 bg-red-950/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-red-500 cursor-pointer has-[:checked]:border-red-500 has-[:checked]:bg-red-950/30">
+                                        <input type="radio" name="driving_mode_2" value="push" x-model="c2Mode" @change="activePreset = null" class="sr-only">
                                         <div class="font-bold text-white">⚡ PUSH</div>
                                         <span class="text-[9px] text-red-400 block mt-0.5">-0.45s / +Wear</span>
                                     </label>
-                                    <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-zinc-300 cursor-pointer has-[:checked]:border-zinc-300 has-[:checked]:bg-zinc-800/30">
-                                        <input type="radio" name="driving_mode_2" value="balanced" class="sr-only" checked>
+                                    <label :class="c2Mode === 'balanced' ? 'border-zinc-300 bg-zinc-800/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-zinc-300 cursor-pointer has-[:checked]:border-zinc-300 has-[:checked]:bg-zinc-800/30">
+                                        <input type="radio" name="driving_mode_2" value="balanced" x-model="c2Mode" @change="activePreset = null" class="sr-only" checked>
                                         <div class="font-bold text-white">⚙️ BALANCED</div>
                                         <span class="text-[9px] text-zinc-400 block mt-0.5">Optimal Balance</span>
                                     </label>
-                                    <label class="p-2.5 rounded bg-zinc-900 border border-zinc-800 hover:border-emerald-500 cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-950/30">
-                                        <input type="radio" name="driving_mode_2" value="conserve" class="sr-only">
+                                    <label :class="c2Mode === 'conserve' ? 'border-emerald-500 bg-emerald-950/30' : 'border-zinc-800 bg-zinc-900'" class="p-2.5 rounded border hover:border-emerald-500 cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-950/30">
+                                        <input type="radio" name="driving_mode_2" value="conserve" x-model="c2Mode" @change="activePreset = null" class="sr-only">
                                         <div class="font-bold text-white">🛡️ CONSERVE</div>
                                         <span class="text-[9px] text-emerald-400 block mt-0.5">+15 Rel / -30% Deg</span>
                                     </label>

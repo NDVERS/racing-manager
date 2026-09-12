@@ -285,4 +285,47 @@ class RaceTacticsTest extends TestCase
         $resultResponse->assertOk();
         $resultResponse->assertSee('CONSERVE / HARD');
     }
+
+    /**
+     * Test pre-race show view renders 1-Click Strategy Presets bar with options.
+     */
+    public function test_pre_race_show_view_renders_strategy_presets(): void
+    {
+        $user = User::factory()->create();
+        $team = Team::factory()->create(['user_id' => $user->id, 'money' => 50000]);
+        Car::factory()->forTeam($team)->create(['is_active' => true]);
+        Driver::factory()->forTeam($team)->lead()->create();
+        $race = Race::factory()->create(['entry_fee' => 1000, 'weather' => 'dry']);
+
+        $response = $this->actingAs($user)->get(route('races.show', $race));
+
+        $response->assertOk();
+        $response->assertSee('1-Click Strategy Presets');
+        $response->assertSee('Aggressive Split');
+        $response->assertSee('Safe Conserve');
+        $response->assertSee('Balanced Standard');
+        $response->assertSee('Wet Protocol');
+    }
+
+    /**
+     * Test live view renders speed multiplier controls and instant skip button.
+     */
+    public function test_live_view_renders_playback_speed_controls_and_instant_skip(): void
+    {
+        $user = User::factory()->create();
+        $team = Team::factory()->create(['user_id' => $user->id, 'money' => 50000]);
+        Car::factory()->forTeam($team)->create(['is_active' => true]);
+        Driver::factory()->forTeam($team)->lead()->create();
+        $race = Race::factory()->create(['entry_fee' => 1000, 'weather' => 'dry']);
+
+        $this->actingAs($user)->post(route('races.run', $race));
+
+        $liveResponse = $this->actingAs($user)->get(route('races.live', $race));
+        $liveResponse->assertOk();
+        $liveResponse->assertSee('1x');
+        $liveResponse->assertSee('2x');
+        $liveResponse->assertSee('5x');
+        $liveResponse->assertSee('Instant Skip');
+        $liveResponse->assertSee('View Official Debrief & Payouts', false);
+    }
 }

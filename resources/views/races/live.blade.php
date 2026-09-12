@@ -3,7 +3,67 @@
 @section('title', 'Live Pit-Wall Telemetry - ' . $race->name)
 
 @section('content')
-<div class="space-y-6">
+<div x-data="{
+    playbackSpeed: 1,
+    currentLap: 1,
+    totalLaps: {{ max(1, (int)$race->laps) }},
+    isFinished: false,
+    timer: null,
+
+    init() {
+        this.startTicker();
+    },
+
+    setSpeed(speed) {
+        this.playbackSpeed = speed;
+        if (!this.isFinished) {
+            this.startTicker();
+        }
+    },
+
+    startTicker() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        if (this.currentLap >= this.totalLaps) {
+            this.isFinished = true;
+            return;
+        }
+        const intervalMs = Math.round(1000 / this.playbackSpeed);
+        this.timer = setInterval(() => {
+            if (this.currentLap < this.totalLaps) {
+                this.currentLap++;
+                this.$nextTick(() => {
+                    const feed = document.getElementById('telemetry-radio-feed');
+                    if (feed) {
+                        feed.scrollTop = feed.scrollHeight;
+                    }
+                });
+            }
+            if (this.currentLap >= this.totalLaps) {
+                this.isFinished = true;
+                clearInterval(this.timer);
+                this.timer = null;
+            }
+        }, intervalMs);
+    },
+
+    instantSkip() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        this.currentLap = this.totalLaps;
+        this.isFinished = true;
+        this.$nextTick(() => {
+            const feed = document.getElementById('telemetry-radio-feed');
+            if (feed) {
+                feed.scrollTop = feed.scrollHeight;
+            }
+        });
+    }
+}" class="space-y-6">
     <!-- Top Telemetry Header Bar -->
     <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-xl relative overflow-hidden">
         <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-orange-500 to-amber-400"></div>
@@ -18,7 +78,7 @@
                     <span class="text-red-400 font-bold uppercase">LIVE TELEMETRY // {{ $race->name }}</span>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="w-3 h-3 rounded-full" :class="isFinished ? 'bg-purple-500' : 'bg-emerald-500 animate-pulse'"></span>
                     <h1 class="text-2xl sm:text-3xl font-black text-white uppercase font-mono tracking-tight">
                         {{ $race->name }} &bull; Grand Prix
                     </h1>
@@ -33,6 +93,36 @@
                     $pCompound = $simulation['tactics']['tire_compound'] ?? ($simulation['tire_compound'] ?? 'medium');
                     $pMode = $simulation['tactics']['driving_mode'] ?? ($simulation['driving_mode'] ?? 'balanced');
                 @endphp
+
+                <!-- Simulation Speed & Instant Skip Controls -->
+                <div class="flex items-center gap-1.5 bg-zinc-950/90 border border-zinc-800 rounded p-1.5 font-mono shadow-inner">
+                    <span class="text-[10px] text-zinc-500 uppercase font-bold px-1.5 hidden sm:inline">Speed:</span>
+                    <button type="button"
+                        @click="setSpeed(1)"
+                        :class="playbackSpeed === 1 ? 'bg-amber-500 text-black font-black shadow-sm' : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'"
+                        class="px-2.5 py-1 rounded text-xs font-bold uppercase transition cursor-pointer">
+                        1x
+                    </button>
+                    <button type="button"
+                        @click="setSpeed(2)"
+                        :class="playbackSpeed === 2 ? 'bg-amber-500 text-black font-black shadow-sm' : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'"
+                        class="px-2.5 py-1 rounded text-xs font-bold uppercase transition cursor-pointer">
+                        2x
+                    </button>
+                    <button type="button"
+                        @click="setSpeed(5)"
+                        :class="playbackSpeed === 5 ? 'bg-amber-500 text-black font-black shadow-sm' : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'"
+                        class="px-2.5 py-1 rounded text-xs font-bold uppercase transition cursor-pointer">
+                        5x
+                    </button>
+                    <button type="button"
+                        @click="instantSkip()"
+                        :disabled="isFinished"
+                        :class="isFinished ? 'opacity-40 cursor-not-allowed bg-zinc-900 text-zinc-600 border border-zinc-800' : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-black shadow-sm cursor-pointer border border-amber-500/50'"
+                        class="ml-1 px-3 py-1 rounded text-xs uppercase transition flex items-center gap-1">
+                        <span>⏩ Instant Skip</span>
+                    </button>
+                </div>
 
                 <!-- Active Compound Badge -->
                 <div class="bg-zinc-950/90 border border-zinc-800 rounded px-3 py-2 text-center font-mono">
@@ -86,7 +176,37 @@
         </div>
     </div>
 
-    <!-- Player Outcome Banner -->
+    <!-- Live Lap Progression Bar -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded p-4 shadow-lg font-mono">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+                <template x-if="!isFinished">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 text-xs font-bold uppercase">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span>LIVE SIMULATION &bull; LAP <span x-text="currentLap"></span> / {{ $race->laps }}</span>
+                    </span>
+                </template>
+                <template x-if="isFinished">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-950/90 border border-purple-500/50 text-purple-300 text-xs font-black uppercase">
+                        <span>🏁 CHECKERED FLAG &bull; RACE CONCLUDED</span>
+                    </span>
+                </template>
+            </div>
+
+            <div class="text-xs text-zinc-400 flex items-center gap-3">
+                <span>Speed: <strong class="text-amber-400" x-text="playbackSpeed + 'x'"></strong></span>
+                <span>&bull;</span>
+                <span>Telemetry: <strong class="text-white" x-text="Math.round((currentLap / totalLaps) * 100) + '%'"></strong></span>
+            </div>
+        </div>
+
+        <!-- Progress Track -->
+        <div class="w-full bg-zinc-950 rounded-full h-2.5 overflow-hidden border border-zinc-800/80">
+            <div class="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-400 transition-all duration-200 ease-linear rounded-full"
+                 :style="'width: ' + ((currentLap / totalLaps) * 100) + '%'"></div>
+        </div>
+    </div>
+
     <!-- Player Outcome Banner -->
     @php
         $pRes1 = $simulation['player_result_1'] ?? $simulation['player_result'];
@@ -132,8 +252,8 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                <a href="{{ route('races.results', $race) }}" class="px-5 py-3 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold tracking-wider uppercase transition shadow-md flex items-center gap-2">
-                    <span>Official Debrief & Ledger</span>
+                <a href="{{ route('races.results', $race) }}" class="px-5 py-3 rounded bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-mono font-bold tracking-wider uppercase transition shadow-md flex items-center gap-2">
+                    <span>View Official Debrief & Payouts</span>
                     <span>&rarr;</span>
                 </a>
             </div>
@@ -286,9 +406,13 @@
                     <span class="text-[10px] font-mono text-zinc-500">LIVE TELEMETRY</span>
                 </div>
 
-                <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                <div id="telemetry-radio-feed" class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
                     @foreach($simulation['lap_events'] as $event)
-                        <div class="p-3 rounded border text-xs font-mono {{ $event['type'] === 'overtake' ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : ($event['type'] === 'defense_loss' ? 'bg-amber-950/40 border-amber-500/40 text-amber-200' : ($event['type'] === 'telemetry_alert' ? 'bg-red-950/40 border-red-500/40 text-red-200' : ($event['type'] === 'pit_radio' ? 'bg-blue-950/40 border-blue-500/40 text-blue-200' : ($event['type'] === 'finish' ? 'bg-purple-950/40 border-purple-500/40 text-purple-200' : 'bg-zinc-950/60 border-zinc-800 text-zinc-300')))) }}">
+                        <div x-show="currentLap >= {{ $event['lap'] }}"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             class="p-3 rounded border text-xs font-mono {{ $event['type'] === 'overtake' ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : ($event['type'] === 'defense_loss' ? 'bg-amber-950/40 border-amber-500/40 text-amber-200' : ($event['type'] === 'telemetry_alert' ? 'bg-red-950/40 border-red-500/40 text-red-200' : ($event['type'] === 'pit_radio' ? 'bg-blue-950/40 border-blue-500/40 text-blue-200' : ($event['type'] === 'finish' ? 'bg-purple-950/40 border-purple-500/40 text-purple-200' : 'bg-zinc-950/60 border-zinc-800 text-zinc-300')))) }}">
                             <div class="flex items-center justify-between text-[10px] font-bold uppercase mb-1 opacity-80">
                                 <span>LAP {{ $event['lap'] }}</span>
                                 <span class="tracking-wider">{{ strtoupper(str_replace('_', ' ', $event['type'])) }}</span>

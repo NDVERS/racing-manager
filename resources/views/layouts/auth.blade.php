@@ -7,6 +7,13 @@
 
     <title>{{ config('app.name', 'Racing Manager') }} - @yield('title', 'Pit Wall Access')</title>
 
+    <!-- Favicon & App Branding Icons -->
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="alternate icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+    <meta name="theme-color" content="#09090b">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|jetbrains-mono:400,500,600,700" rel="stylesheet" />
@@ -49,9 +56,7 @@
             <!-- Top Header / Brand & Live Time -->
             <div class="relative z-10 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded bg-orange-600 flex items-center justify-center font-black text-white text-base tracking-tighter shadow-md">
-                        RM
-                    </div>
+                    <x-application-logo class="w-9 h-9 rounded-lg shadow-md shrink-0" />
                     <div>
                         <div class="text-xs font-black tracking-widest text-zinc-100 uppercase font-mono">Racing Manager</div>
                         <div class="text-[10px] text-zinc-400 font-mono tracking-wider uppercase">Paddock Telemetry OS</div>
@@ -162,9 +167,7 @@
             <!-- Mobile Top Logo (Visible only on mobile/tablet) -->
             <div class="flex lg:hidden items-center justify-between pb-6 border-b border-zinc-800/80 mb-6">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded bg-orange-600 flex items-center justify-center font-black text-white text-sm">
-                        RM
-                    </div>
+                    <x-application-logo class="w-8 h-8 rounded-lg shadow-md shrink-0" />
                     <span class="font-black text-sm text-white uppercase tracking-wider font-mono">Racing Manager</span>
                 </div>
                 <span class="text-[10px] font-mono text-zinc-400 bg-zinc-900 px-2.5 py-1 rounded border border-zinc-800">PADDOCK</span>
