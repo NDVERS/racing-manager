@@ -66,7 +66,7 @@ class ChassisDealershipTest extends TestCase
         $response->assertSee('Vortex R1');
         $response->assertSee('Falcon RS');
         $response->assertSee('Phantom GTS');
-        $response->assertSee('ALREADY IN FLEET');
+        $response->assertSee('1/2 IN FLEET');
         $response->assertSee('60,000');
     }
 
@@ -164,9 +164,9 @@ class ChassisDealershipTest extends TestCase
     }
 
     /**
-     * Test user cannot purchase duplicate chassis model already in fleet.
+     * Test user can purchase a second unit of the same chassis model for 2-car team fleet.
      */
-    public function test_user_cannot_purchase_chassis_model_already_owned_in_fleet(): void
+    public function test_user_can_purchase_second_unit_of_same_chassis_model(): void
     {
         $user = User::factory()->create();
         $team = Team::factory()->create([
@@ -174,10 +174,61 @@ class ChassisDealershipTest extends TestCase
             'money' => 80000,
         ]);
 
-        // Already owned in fleet
+        // 1st unit already owned in fleet (Slot 1)
         Car::factory()->forTeam($team)->create([
             'name' => 'Vortex R1',
+            'slot' => 1,
             'is_active' => true,
+        ]);
+
+        $template = Car::create([
+            'name' => 'Vortex R1',
+            'speed' => 60,
+            'acceleration' => 66,
+            'handling' => 76,
+            'braking' => 74,
+            'reliability' => 70,
+            'level' => 1,
+            'purchase_price' => 32000,
+            'team_id' => null,
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('garage.buy', $template));
+
+        $response->assertRedirect(route('garage.index'));
+        $response->assertSessionHas('success');
+
+        $team->refresh();
+        $this->assertEquals(48000, $team->money);
+        $this->assertEquals(2, $team->cars()->where('name', 'Vortex R1')->count());
+
+        // 2nd unit assigned to Slot 2
+        $car2 = $team->cars()->where('name', 'Vortex R1')->where('slot', 2)->first();
+        $this->assertNotNull($car2);
+    }
+
+    /**
+     * Test user cannot purchase more than 2 units of the same chassis model.
+     */
+    public function test_user_cannot_purchase_more_than_two_units_of_same_chassis_model(): void
+    {
+        $user = User::factory()->create();
+        $team = Team::factory()->create([
+            'user_id' => $user->id,
+            'money' => 100000,
+        ]);
+
+        // Already owned 2 units in fleet
+        Car::factory()->forTeam($team)->create([
+            'name' => 'Vortex R1',
+            'slot' => 1,
+            'is_active' => true,
+        ]);
+        Car::factory()->forTeam($team)->create([
+            'name' => 'Vortex R1',
+            'slot' => 2,
+            'is_active' => false,
         ]);
 
         $template = Car::create([
@@ -199,8 +250,8 @@ class ChassisDealershipTest extends TestCase
         $response->assertSessionHas('warning');
 
         $team->refresh();
-        $this->assertEquals(80000, $team->money);
-        $this->assertEquals(1, $team->cars()->where('name', 'Vortex R1')->count());
+        $this->assertEquals(100000, $team->money);
+        $this->assertEquals(2, $team->cars()->where('name', 'Vortex R1')->count());
     }
 
     /**

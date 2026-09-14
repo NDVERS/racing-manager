@@ -23,10 +23,10 @@
 <body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans antialiased selection:bg-orange-500 selection:text-black">
     <div class="relative min-h-screen flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black">
         <!-- Top Navigation -->
-        <header class="border-b border-zinc-800/80 backdrop-blur-md bg-zinc-950/95 sticky top-0 z-50">
-            <div class="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-4">
+        <header class="border-b border-zinc-800/80 backdrop-blur-md bg-zinc-950/95 sticky top-0 z-50 overflow-hidden no-scrollbar">
+            <div class="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 xl:gap-4">
                 <!-- Left: Logo & Navigation Tabs -->
-                <div class="flex items-center gap-4 xl:gap-6 min-w-0">
+                <div class="flex items-center gap-3 xl:gap-5 min-w-0">
                     <a href="{{ route('home') }}" class="flex items-center gap-2.5 group shrink-0">
                         <x-application-logo class="w-8 h-8 rounded-lg shadow-md shadow-orange-600/20 group-hover:scale-105 transition-transform shrink-0" />
                         <div class="hidden sm:flex flex-col leading-none">
@@ -37,60 +37,54 @@
 
                     @auth
                         @if(auth()->user()->team)
-                            <nav class="hidden lg:flex items-center gap-1 xl:gap-1.5 text-xs font-mono font-bold tracking-wider shrink-0">
+                            <nav class="hidden lg:flex items-center gap-0.5 xl:gap-1 text-xs font-mono font-bold tracking-wider shrink-0">
                                 <a
                                     href="{{ route('dashboard') }}"
-                                    class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('dashboard') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
+                                    class="px-2 xl:px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('dashboard') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
                                 >
                                     DASHBOARD
                                 </a>
                                 <a
                                     href="{{ route('garage.index') }}"
-                                    class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('garage.*') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
+                                    class="px-2 xl:px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('garage.*') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
                                 >
                                     GARAGE
                                 </a>
                                 <a
                                     href="{{ route('drivers.index') }}"
-                                    class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('drivers.*') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
+                                    class="px-2 xl:px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('drivers.*') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
                                 >
                                     DRIVERS
                                 </a>
                                 <a
                                     href="{{ route('sponsors.index') }}"
-                                    class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('sponsors.*') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
+                                    class="px-2 xl:px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('sponsors.*') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
                                 >
                                     SPONSORS
                                 </a>
                                 <a
                                     href="{{ route('races.index') }}"
-                                    class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('races.*') && !request()->routeIs('races.history') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
+                                    class="px-2 xl:px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('races.*') && !request()->routeIs('races.history') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
                                 >
                                     RACES
                                 </a>
                                 <a
                                     href="{{ route('standings') }}"
-                                    class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('standings') || request()->routeIs('championship') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
+                                    class="px-2 xl:px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('standings') || request()->routeIs('championship') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
                                 >
                                     STANDINGS
                                 </a>
                                 <a
                                     href="{{ route('hall-of-fame.index') }}"
-                                    class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('hall-of-fame.*') ? 'bg-amber-950/80 text-amber-400 font-black border border-amber-500/40 shadow-sm shadow-amber-950/20' : 'text-zinc-400 hover:text-amber-300 hover:bg-zinc-900/80' }}"
+                                    class="px-2 xl:px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('hall-of-fame.*') ? 'bg-amber-950/80 text-amber-400 font-black border border-amber-500/40 shadow-sm shadow-amber-950/20' : 'text-zinc-400 hover:text-amber-300 hover:bg-zinc-900/80' }}"
                                 >
                                     TROPHIES 🏆
                                 </a>
                                 <a
                                     href="{{ route('races.history') }}"
-                                    class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('races.history') || request()->routeIs('history') || request()->routeIs('race-results.*') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
+                                    class="px-2 xl:px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('races.history') || request()->routeIs('history') || request()->routeIs('race-results.*') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
                                 >
                                     HISTORY
-                                </a>
-                                <a
-                                    href="{{ route('guide') }}"
-                                    class="px-2.5 py-1.5 rounded transition-all whitespace-nowrap {{ request()->routeIs('guide') ? 'bg-zinc-800 text-orange-400 font-black border border-zinc-700/80 shadow-sm shadow-orange-950/20' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80' }}"
-                                >
-                                    HANDBOOK
                                 </a>
                             </nav>
                         @endif
@@ -98,22 +92,22 @@
                 </div>
 
                 <!-- Right: Team Financial Status & User Menu -->
-                <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
                     @auth
                         @if(auth()->user()->team)
                             <!-- Unified Team Telemetry HUD Pill -->
-                            <div class="flex items-center gap-2 sm:gap-2.5 bg-zinc-900/90 border border-zinc-800 rounded-full px-3 py-1 sm:px-3.5 sm:py-1.5 shadow-inner text-xs">
-                                <div class="hidden md:flex items-center gap-1.5 font-semibold text-zinc-200 whitespace-nowrap">
+                            <div class="flex items-center gap-2 bg-zinc-900/90 border border-zinc-800 rounded-full px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-inner text-xs">
+                                <div class="hidden 2xl:flex items-center gap-1.5 font-semibold text-zinc-200 whitespace-nowrap">
                                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    <span class="font-mono">{{ auth()->user()->team->name }}</span>
+                                    <span class="font-mono text-[11px]">{{ auth()->user()->team->name }}</span>
                                 </div>
-                                <div class="hidden md:block h-3 w-px bg-zinc-800"></div>
-                                <div class="font-telemetry font-bold text-amber-400 whitespace-nowrap">
-                                    {{ number_format(auth()->user()->team->fresh()->money) }} <span class="text-[10px] text-zinc-500 font-normal">CR</span>
+                                <div class="hidden 2xl:block h-3 w-px bg-zinc-800"></div>
+                                <div class="font-telemetry font-bold text-amber-400 whitespace-nowrap text-xs">
+                                    {{ number_format(auth()->user()->team->fresh()->money) }} <span class="text-[9px] text-zinc-500 font-normal">CR</span>
                                 </div>
                                 <div class="h-3 w-px bg-zinc-800"></div>
-                                <div class="font-telemetry font-bold text-cyan-400 flex items-center gap-1 whitespace-nowrap">
-                                    <span class="text-[10px] text-zinc-500 font-normal">REP</span> {{ auth()->user()->team->fresh()->reputation }}
+                                <div class="font-telemetry font-bold text-cyan-400 flex items-center gap-1 whitespace-nowrap text-xs">
+                                    <span class="text-[9px] text-zinc-500 font-normal">REP</span> {{ auth()->user()->team->fresh()->reputation }}
                                 </div>
                             </div>
 
@@ -130,7 +124,7 @@
                         @endif
 
                         <!-- User Profile & Log Out Group -->
-                        <div class="flex items-center gap-2 pl-1 border-l border-zinc-800/80">
+                        <div class="flex items-center gap-1.5 pl-1 border-l border-zinc-800/80">
                             <div class="hidden 2xl:flex items-center gap-1.5 px-2 py-1 rounded bg-zinc-900/60 border border-zinc-800/60">
                                 <span class="w-5 h-5 rounded-full bg-zinc-800 text-zinc-300 flex items-center justify-center text-[10px] font-bold font-telemetry">
                                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
@@ -142,7 +136,7 @@
                                 @csrf
                                 <button
                                     type="submit"
-                                    class="text-xs font-mono font-bold text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 rounded px-2.5 py-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                                    class="text-xs font-mono font-bold text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 rounded px-2 py-1.5 transition-colors cursor-pointer whitespace-nowrap"
                                     title="Sign Out of Session"
                                 >
                                     LOG OUT
@@ -161,7 +155,7 @@
             <!-- Mobile Sub-Navigation -->
             @auth
                 @if(auth()->user()->team)
-                    <div class="lg:hidden border-t border-zinc-800/80 px-4 py-2 flex items-center gap-1.5 overflow-x-auto text-xs font-mono font-bold scrollbar-none bg-zinc-950">
+                    <div class="lg:hidden border-t border-zinc-800/80 px-4 py-2 flex items-center gap-1.5 overflow-x-auto text-xs font-mono font-bold no-scrollbar bg-zinc-950">
                         <a
                             href="{{ route('dashboard') }}"
                             class="px-2.5 py-1 rounded whitespace-nowrap {{ request()->routeIs('dashboard') ? 'bg-zinc-800 text-orange-400 border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200' }}"

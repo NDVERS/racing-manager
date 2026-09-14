@@ -26,6 +26,10 @@ class DashboardController extends Controller
 
         $activeCar = $team->activeCar();
         $primaryDriver = $team->primaryDriver();
+        $car1 = $team->car1();
+        $car2 = $team->car2();
+        $driver1 = $team->driver1();
+        $driver2 = $team->driver2();
         $isRaceReady = ($activeCar !== null && $primaryDriver !== null);
 
         // Onboarding Directives Tracking
@@ -65,6 +69,10 @@ class DashboardController extends Controller
             'team' => $team,
             'activeCar' => $activeCar,
             'primaryDriver' => $primaryDriver,
+            'car1' => $car1,
+            'car2' => $car2,
+            'driver1' => $driver1,
+            'driver2' => $driver2,
             'isRaceReady' => $isRaceReady,
             'totalCars' => $team->cars->count(),
             'totalDrivers' => $team->drivers->count(),

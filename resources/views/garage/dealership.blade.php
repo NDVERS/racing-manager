@@ -80,7 +80,9 @@
             @forelse($templates as $car)
                 @php
                     $perfIndex = (int) round(($car->speed + $car->acceleration + $car->handling + $car->braking + $car->reliability) / 5);
-                    $isOwned = in_array($car->name, $ownedCarNames, true);
+                    $ownedCount = (int) ($ownedCarCounts[$car->name] ?? (in_array($car->name, $ownedCarNames ?? [], true) ? 1 : 0));
+                    $isMaxOwned = $ownedCount >= 2;
+                    $hasOne = $ownedCount === 1;
                     $price = (int) ($car->purchase_price ?? 30000);
                     $canAfford = $team->credits >= $price;
 
@@ -95,10 +97,15 @@
                     };
                 @endphp
 
-                <div class="bg-zinc-900/90 border {{ $isOwned ? 'border-zinc-800 opacity-90' : ($canAfford ? 'border-zinc-800 hover:border-orange-500/50' : 'border-zinc-800/80') }} rounded-lg p-6 shadow-xl transition-all flex flex-col justify-between relative overflow-hidden">
-                    @if($isOwned)
+                <div class="bg-zinc-900/90 border {{ $isMaxOwned ? 'border-zinc-800 opacity-90' : ($hasOne ? 'border-amber-500/40 hover:border-amber-400/70' : ($canAfford ? 'border-zinc-800 hover:border-orange-500/50' : 'border-zinc-800/80')) }} rounded-lg p-6 shadow-xl transition-all flex flex-col justify-between relative overflow-hidden">
+                    @if($isMaxOwned)
                         <div class="absolute top-0 right-0 bg-zinc-800 text-zinc-400 text-[10px] font-mono font-bold px-3 py-1 rounded-bl border-b border-l border-zinc-700 uppercase tracking-wider">
-                            ✓ ALREADY IN FLEET
+                            ✓ MAX FLEET (2/2 OWNED)
+                        </div>
+                    @elseif($hasOne)
+                        <div class="absolute top-0 right-0 bg-amber-950/90 text-amber-400 text-[10px] font-mono font-bold px-3 py-1 rounded-bl border-b border-l border-amber-500/40 uppercase tracking-wider flex items-center gap-1">
+                            <span>⚡</span>
+                            <span>1/2 IN FLEET &bull; 2-CAR READY</span>
                         </div>
                     @endif
 
@@ -184,24 +191,24 @@
 
                     <!-- Card Actions -->
                     <div class="pt-2 border-t border-zinc-800/80">
-                        @if($isOwned)
+                        @if($isMaxOwned)
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-xs font-mono text-zinc-400 flex items-center gap-1.5">
                                     <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                    <span>Operating in your constructor fleet</span>
+                                    <span>2 Units operating in constructor fleet</span>
                                 </span>
                                 <a href="{{ route('garage.index') }}" class="px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono font-bold uppercase transition">
                                     View in Garage &rarr;
                                 </a>
                             </div>
                         @elseif($canAfford)
-                            <form method="POST" action="{{ route('garage.buy', $car) }}" onsubmit="return confirm('Commission the {{ $car->name }} chassis to your constructor fleet for {{ number_format($price) }} CR?');">
+                            <form method="POST" action="{{ route('garage.buy', $car) }}" onsubmit="return confirm('Commission {{ $hasOne ? 'a 2nd unit of the ' : 'the ' }}{{ $car->name }} chassis to your constructor fleet for {{ number_format($price) }} CR?');">
                                 @csrf
                                 <button
                                     type="submit"
                                     class="w-full py-2.5 px-4 rounded bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 hover:from-orange-500 hover:to-amber-400 text-black font-mono font-black text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
                                 >
-                                    <span>🛒 COMMISSION CHASSIS — {{ number_format($price) }} CR</span>
+                                    <span>🛒 {{ $hasOne ? 'COMMISSION 2ND UNIT (DUAL-CAR)' : 'COMMISSION CHASSIS' }} — {{ number_format($price) }} CR</span>
                                     <span>&rarr;</span>
                                 </button>
                             </form>

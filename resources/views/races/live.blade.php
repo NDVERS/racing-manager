@@ -257,11 +257,11 @@
                 </div>
                 <div class="absolute transition-all duration-300 ease-out flex items-center"
                      :style="'left: ' + (isFinished ? 95 : Math.max(3, Math.min(92, ((currentLap / totalLaps) * 100) - 2.5))) + '%'">
-                    <span class="w-2 h-2 rounded-full bg-zinc-500 border border-zinc-400" title="Competitor"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-500 border border-zinc-400" title="Competitor"></span>
                 </div>
                 <div class="absolute transition-all duration-300 ease-out flex items-center"
                      :style="'left: ' + (isFinished ? 92 : Math.max(2, Math.min(88, ((currentLap / totalLaps) * 100) - 5.0))) + '%'">
-                    <span class="w-2 h-2 rounded-full bg-zinc-600 border border-zinc-500" title="Competitor"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-600 border border-zinc-500" title="Competitor"></span>
                 </div>
 
                 <!-- Car #1 (YOU) Indicator Marker -->
@@ -332,14 +332,7 @@
     </div>
 
     <!-- Player Outcome Banner -->
-    @php
-        $pRes1 = $simulation['player_result_1'] ?? $simulation['player_result'];
-        $pRes2 = $simulation['player_result_2'] ?? null;
-        $isTwoCar = !empty($simulation['is_two_car']) && $pRes2 !== null;
-        $pos1 = $pRes1['position'] ?? 10;
-        $pos2 = $pRes2['position'] ?? null;
-    @endphp
-    <div class="bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-cyan-500/40 rounded p-6 shadow-xl relative overflow-hidden">
+    <div class="bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-cyan-500/40 rounded p-6 shadow-xl relative overflow-hidden font-mono">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div class="flex flex-wrap items-center gap-5">
                 <!-- Car #1 Card -->
@@ -385,125 +378,276 @@
     </div>
 
     <!-- Main Telemetry Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Left 2 Cols: Live Classification Leaderboard -->
-        <div class="lg:col-span-2 space-y-6">
-            <!-- Leaderboard Table -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-lg">
-                <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-800">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded bg-orange-500"></span>
-                        <h2 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Grand Prix Final Classification</h2>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Left 2 Cols: Official F1 Pit-Wall Live Timing Tower (20 Cars) -->
+        <div class="xl:col-span-2 space-y-6">
+            @php
+                // Pre-process Timing Tower Standings, Micro-Sectors, Intervals, and FL
+                $towerStandings = [];
+                $prevTotalSeconds = null;
+                $fastestLapOverallTime = $simulation['fastest_lap_overall']['time'] ?? null;
+                $fastestDriverName = $simulation['fastest_lap_overall']['driver'] ?? null;
+
+                // Find lowest sector bounds for purple honors
+                $minS1 = 999.0;
+                $minS2 = 999.0;
+                $minS3 = 999.0;
+
+                foreach ($simulation['standings'] as $idx => $driver) {
+                    $flSec = $driver['fastest_lap_seconds'] ?? (74.0 + $idx * 0.12);
+                    $s1Val = round($flSec * 0.315 + (($idx % 4) * 0.05), 3);
+                    $s2Val = round($flSec * 0.410 + (($idx % 3) * 0.06), 3);
+                    $s3Val = round($flSec * 0.275 + (($idx % 5) * 0.04), 3);
+
+                    if ($s1Val < $minS1) { $minS1 = $s1Val; }
+                    if ($s2Val < $minS2) { $minS2 = $s2Val; }
+                    if ($s3Val < $minS3) { $minS3 = $s3Val; }
+                }
+
+                foreach ($simulation['standings'] as $idx => $driver) {
+                    $currSeconds = $driver['total_seconds'] ?? (1000 + $idx * 1.4);
+                    if ($idx === 0) {
+                        $intervalText = 'LEADER';
+                        $intervalSec = 0.0;
+                    } else {
+                        $intervalSec = max(0.045, $currSeconds - $prevTotalSeconds);
+                        $intervalText = '+' . number_format($intervalSec, 3) . 's';
+                    }
+                    $prevTotalSeconds = $currSeconds;
+
+                    $flSec = $driver['fastest_lap_seconds'] ?? (74.0 + $idx * 0.12);
+                    $s1 = round($flSec * 0.315 + (($idx % 4) * 0.05), 3);
+                    $s2 = round($flSec * 0.410 + (($idx % 3) * 0.06), 3);
+                    $s3 = round($flSec * 0.275 + (($idx % 5) * 0.04), 3);
+
+                    // Position Delta Calculation
+                    $startGridPos = (($idx * 3 + 7) % count($simulation['standings'])) + 1;
+                    $gainLoss = $startGridPos - ($idx + 1); // positive = gained positions
+
+                    $isPlayer = !empty($driver['is_player']);
+                    $slot = $driver['car_slot'] ?? 1;
+                    $isOverallFastest = ($driver['driver_name'] === $fastestDriverName || $driver['fastest_lap'] === $fastestLapOverallTime);
+
+                    $towerStandings[] = array_merge($driver, [
+                        'position' => $idx + 1,
+                        'interval_text' => $intervalText,
+                        'interval_sec' => $intervalSec,
+                        'start_grid' => $startGridPos,
+                        'gain_loss' => $gainLoss,
+                        's1' => number_format($s1, 3),
+                        's2' => number_format($s2, 3),
+                        's3' => number_format($s3, 3),
+                        'is_s1_fastest' => ($s1 <= $minS1 + 0.005),
+                        'is_s2_fastest' => ($s2 <= $minS2 + 0.005),
+                        'is_s3_fastest' => ($s3 <= $minS3 + 0.005),
+                        'is_overall_fastest' => $isOverallFastest,
+                        'is_player' => $isPlayer,
+                        'slot' => $slot,
+                    ]);
+                }
+            @endphp
+
+            <!-- Timing Tower Table Container -->
+            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 shadow-2xl relative font-mono overflow-hidden">
+                <!-- Pit-Wall HUD Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-zinc-800 gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-3 h-3 rounded bg-red-600 animate-pulse flex items-center justify-center"></div>
+                        <div>
+                            <h2 class="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+                                <span>Official F1 Pit-Wall Live Timing Tower</span>
+                                <span class="text-[9px] bg-red-950 border border-red-500/50 text-red-400 px-1.5 py-0.5 rounded font-bold">
+                                    FIA OFFICIAL
+                                </span>
+                            </h2>
+                            <p class="text-[11px] text-zinc-400 mt-0.5">
+                                Grand Prix Final Classification &bull; Sector telemetry, interval delta & tire life &bull; 20 Cars Grid
+                            </p>
+                        </div>
                     </div>
-                    <span class="text-xs font-mono text-zinc-400">{{ count($simulation['standings']) }} Competitors Classified</span>
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="text-[10px] text-zinc-400 bg-zinc-950 border border-zinc-800 px-2 py-1 rounded">
+                            LAP <span class="text-amber-400 font-bold" x-text="currentLap"></span> / {{ $race->laps }}
+                        </span>
+                        <span class="text-[10px] text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-1 rounded font-bold">
+                            SYNC: 100%
+                        </span>
+                    </div>
                 </div>
 
+                <!-- Table Content -->
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs font-mono">
-                        <thead class="text-[10px] text-zinc-500 uppercase border-b border-zinc-800">
+                    <table class="w-full text-left text-xs">
+                        <thead class="text-[9px] text-zinc-400 uppercase bg-zinc-950/80 border-y border-zinc-800">
                             <tr>
-                                <th class="py-2.5 px-3">Pos</th>
-                                <th class="py-2.5 px-3">Driver / Constructor</th>
-                                <th class="py-2.5 px-3">Strategy</th>
-                                <th class="py-2.5 px-3 text-right">Total Time</th>
-                                <th class="py-2.5 px-3 text-right">Interval</th>
-                                <th class="py-2.5 px-3 text-right">Best Lap</th>
+                                <th class="py-2.5 px-2.5 text-center w-12">POS</th>
+                                <th class="py-2.5 px-2 text-center w-10">GAIN</th>
+                                <th class="py-2.5 px-3 min-w-[160px]">DRIVER / CONSTRUCTOR</th>
+                                <th class="py-2.5 px-2.5 text-center w-16">TYRE</th>
+                                <th class="py-2.5 px-2 text-right w-16">S1</th>
+                                <th class="py-2.5 px-2 text-right w-16">S2</th>
+                                <th class="py-2.5 px-2 text-right w-16">S3</th>
+                                <th class="py-2.5 px-2.5 text-right w-20">GAP</th>
+                                <th class="py-2.5 px-2.5 text-right min-w-[90px]">INTERVAL</th>
+                                <th class="py-2.5 px-3 text-right min-w-[100px]">BEST LAP</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-zinc-800/60">
-                            @foreach($simulation['standings'] as $driver)
-                                @php
-                                    $isPlayer = !empty($driver['is_player']);
-                                    $slot = $driver['car_slot'] ?? 1;
-                                @endphp
-                                <tr class="{{ $isPlayer ? ($slot === 1 ? 'bg-cyan-950/40 border-l-2 border-l-cyan-400 font-bold' : 'bg-blue-950/40 border-l-2 border-l-blue-400 font-bold') : 'hover:bg-zinc-800/30' }} transition-colors">
-                                    <!-- Position -->
-                                    <td class="py-3 px-3">
-                                        @if($driver['position'] === 1)
-                                             <span class="w-6 h-6 rounded bg-amber-400 text-black font-black text-xs flex items-center justify-center shadow-sm">1</span>
-                                        @elseif($driver['position'] === 2)
-                                             <span class="w-6 h-6 rounded bg-zinc-300 text-black font-black text-xs flex items-center justify-center">2</span>
-                                        @elseif($driver['position'] === 3)
-                                             <span class="w-6 h-6 rounded bg-amber-700 text-white font-black text-xs flex items-center justify-center">3</span>
+                        <tbody class="divide-y divide-zinc-800/50">
+                            @foreach($towerStandings as $row)
+                                <tr class="transition-colors {{ $row['is_player'] ? ($row['slot'] === 1 ? 'bg-cyan-950/30 border-l-4 border-l-cyan-400' : 'bg-blue-950/30 border-l-4 border-l-blue-400') : 'hover:bg-zinc-800/30' }}">
+                                    <!-- Pos -->
+                                    <td class="py-2.5 px-2.5 text-center font-black">
+                                        @if($row['position'] === 1)
+                                            <span class="inline-flex w-6 h-6 rounded bg-amber-400 text-black font-black text-xs items-center justify-center shadow-md shadow-amber-400/30">1</span>
+                                        @elseif($row['position'] === 2)
+                                            <span class="inline-flex w-6 h-6 rounded bg-zinc-200 text-black font-black text-xs items-center justify-center shadow-sm">2</span>
+                                        @elseif($row['position'] === 3)
+                                            <span class="inline-flex w-6 h-6 rounded bg-amber-700 text-white font-black text-xs items-center justify-center shadow-sm">3</span>
                                         @else
-                                             <span class="text-zinc-400 font-bold pl-1.5">{{ $driver['position'] }}</span>
+                                            <span class="text-zinc-400 font-bold">{{ $row['position'] }}</span>
                                         @endif
                                     </td>
 
-                                    <!-- Driver & Team -->
-                                    <td class="py-3 px-3">
+                                    <!-- Gain/Loss Delta -->
+                                    <td class="py-2.5 px-2 text-center text-[10px] font-bold">
+                                        @if($row['gain_loss'] > 0)
+                                            <span class="text-emerald-400">▲+{{ $row['gain_loss'] }}</span>
+                                        @elseif($row['gain_loss'] < 0)
+                                            <span class="text-rose-400">▼{{ $row['gain_loss'] }}</span>
+                                        @else
+                                            <span class="text-zinc-500">-</span>
+                                        @endif
+                                    </td>
+
+                                    <!-- Driver & Team Identity -->
+                                    <td class="py-2.5 px-3">
                                         <div class="flex items-center gap-2">
                                             <div>
-                                                <div class="text-white font-bold flex items-center gap-1.5">
-                                                    <span>{{ $driver['driver_name'] }}</span>
-                                                    @if($isPlayer)
-                                                        @if($slot === 1)
-                                                            <span class="text-[9px] bg-cyan-600 text-white px-1.5 py-0.2 rounded font-black tracking-tighter">CAR #1 (YOU)</span>
+                                                <div class="text-white font-bold flex items-center gap-1.5 leading-tight">
+                                                    <span class="{{ $row['is_player'] ? 'text-white' : 'text-zinc-200' }}">{{ $row['driver_name'] }}</span>
+                                                    @if($row['is_player'])
+                                                        @if($row['slot'] === 1)
+                                                            <span class="text-[8px] bg-cyan-500 text-black px-1.5 py-0.5 rounded font-black tracking-wider">CAR #1 (YOU)</span>
                                                         @else
-                                                            <span class="text-[9px] bg-blue-600 text-white px-1.5 py-0.2 rounded font-black tracking-tighter">CAR #2 (YOU)</span>
+                                                            <span class="text-[8px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-black tracking-wider">CAR #2 (YOU)</span>
                                                         @endif
                                                     @endif
                                                 </div>
-                                                <div class="text-[10px] text-zinc-400 uppercase font-normal">{{ $driver['team_name'] }} &bull; {{ $driver['car_name'] }}</div>
+                                                <div class="text-[10px] text-zinc-400 uppercase font-normal mt-0.5">
+                                                    {{ $row['team_name'] }} &bull; <span class="text-zinc-500">{{ $row['car_name'] }}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
 
-                                    <!-- Strategy (Tire & Mode) -->
-                                    <td class="py-3 px-3">
-                                        <div class="flex items-center gap-1.5">
-                                            @php
-                                                $dCompound = $driver['tire_compound'] ?? 'medium';
-                                                $dMode = $driver['driving_mode'] ?? 'balanced';
-                                            @endphp
-                                            <!-- Compound Pill -->
-                                            @if($dCompound === 'soft')
-                                                <span class="px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800/80 text-[9px] font-black" title="Soft Compound">S</span>
-                                            @elseif($dCompound === 'hard')
-                                                <span class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-600 text-[9px] font-black" title="Hard Compound">H</span>
-                                            @elseif($dCompound === 'wet')
-                                                <span class="px-1.5 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-700 text-[9px] font-black" title="Wet Rain Compound">W</span>
+                                    <!-- Tire Status (Compound & Age) -->
+                                    <td class="py-2.5 px-2.5 text-center">
+                                        @php
+                                            $comp = $row['tire_compound'] ?? 'medium';
+                                        @endphp
+                                        <div class="inline-flex items-center gap-1">
+                                            @if($comp === 'soft')
+                                                <span class="w-4 h-4 rounded-full bg-red-600 text-white border border-red-400 text-[9px] font-black inline-flex items-center justify-center shadow-sm" title="Soft (C3)">S</span>
+                                            @elseif($comp === 'hard')
+                                                <span class="w-4 h-4 rounded-full bg-zinc-100 text-black border border-zinc-300 text-[9px] font-black inline-flex items-center justify-center shadow-sm" title="Hard (C1)">H</span>
+                                            @elseif($comp === 'wet')
+                                                <span class="w-4 h-4 rounded-full bg-blue-600 text-white border border-blue-400 text-[9px] font-black inline-flex items-center justify-center shadow-sm" title="Wet Rain">W</span>
                                             @else
-                                                <span class="px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800/80 text-[9px] font-black" title="Medium Compound">M</span>
+                                                <span class="w-4 h-4 rounded-full bg-amber-400 text-black border border-amber-300 text-[9px] font-black inline-flex items-center justify-center shadow-sm" title="Medium (C2)">M</span>
                                             @endif
+                                            <span class="text-[9px] text-zinc-500 font-semibold">L<span x-text="currentLap"></span></span>
+                                        </div>
+                                    </td>
 
-                                            <!-- Mode Pill -->
-                                            @if($dMode === 'push')
-                                                <span class="text-[9px] text-red-400 font-bold">PUSH</span>
-                                            @elseif($dMode === 'conserve')
-                                                <span class="text-[9px] text-emerald-400 font-bold">ECO</span>
-                                            @else
-                                                <span class="text-[9px] text-zinc-400">STD</span>
+                                    <!-- Micro-Sector 1 -->
+                                    <td class="py-2.5 px-2 text-right text-[11px] font-bold">
+                                        @if($row['is_s1_fastest'])
+                                            <span class="text-purple-300 bg-purple-950/80 border border-purple-500/40 px-1 py-0.5 rounded font-black shadow-sm" title="Overall Fastest S1">{{ $row['s1'] }}</span>
+                                        @elseif($row['position'] <= 3)
+                                            <span class="text-amber-300">{{ $row['s1'] }}</span>
+                                        @else
+                                            <span class="text-zinc-400">{{ $row['s1'] }}</span>
+                                        @endif
+                                    </td>
+
+                                    <!-- Micro-Sector 2 -->
+                                    <td class="py-2.5 px-2 text-right text-[11px] font-bold">
+                                        @if($row['is_s2_fastest'])
+                                            <span class="text-purple-300 bg-purple-950/80 border border-purple-500/40 px-1 py-0.5 rounded font-black shadow-sm" title="Overall Fastest S2">{{ $row['s2'] }}</span>
+                                        @elseif($row['position'] <= 3)
+                                            <span class="text-amber-300">{{ $row['s2'] }}</span>
+                                        @else
+                                            <span class="text-zinc-400">{{ $row['s2'] }}</span>
+                                        @endif
+                                    </td>
+
+                                    <!-- Micro-Sector 3 -->
+                                    <td class="py-2.5 px-2 text-right text-[11px] font-bold">
+                                        @if($row['is_s3_fastest'])
+                                            <span class="text-purple-300 bg-purple-950/80 border border-purple-500/40 px-1 py-0.5 rounded font-black shadow-sm" title="Overall Fastest S3">{{ $row['s3'] }}</span>
+                                        @elseif($row['position'] <= 3)
+                                            <span class="text-amber-300">{{ $row['s3'] }}</span>
+                                        @else
+                                            <span class="text-zinc-400">{{ $row['s3'] }}</span>
+                                        @endif
+                                    </td>
+
+                                    <!-- Gap to Leader -->
+                                    <td class="py-2.5 px-2.5 text-right font-bold {{ $row['position'] === 1 ? 'text-emerald-400' : 'text-zinc-300' }}">
+                                        {{ $row['gap'] }}
+                                    </td>
+
+                                    <!-- Interval to Car Ahead -->
+                                    <td class="py-2.5 px-2.5 text-right">
+                                        <div class="flex items-center justify-end gap-1">
+                                            <span class="font-bold {{ $row['position'] === 1 ? 'text-emerald-400' : 'text-zinc-400' }}">
+                                                {{ $row['interval_text'] }}
+                                            </span>
+                                            @if($row['position'] > 1 && $row['interval_sec'] < 1.0)
+                                                <span class="text-[8px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/50 font-black animate-pulse" title="DRS Zone Active (< 1.0s)">
+                                                    DRS
+                                                </span>
                                             @endif
                                         </div>
                                     </td>
 
-                                    <!-- Total Time -->
-                                    <td class="py-3 px-3 text-right text-zinc-200">
-                                        {{ $driver['total_time'] }}
-                                    </td>
-
-                                    <!-- Gap -->
-                                    <td class="py-3 px-3 text-right font-bold {{ $driver['gap'] === 'LEADER' ? 'text-emerald-400' : 'text-zinc-400' }}">
-                                        {{ $driver['gap'] }}
-                                    </td>
-
-                                    <!-- Best Lap -->
-                                    <td class="py-3 px-3 text-right font-mono text-cyan-400">
-                                        {{ $driver['fastest_lap'] }}
+                                    <!-- Best Lap & FL Indicator -->
+                                    <td class="py-2.5 px-3 text-right">
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            @if($row['is_overall_fastest'])
+                                                <span class="text-[9px] bg-purple-950 text-purple-300 border border-purple-500/60 px-1.5 py-0.5 rounded font-black flex items-center gap-1 shadow-sm shadow-purple-500/20">
+                                                    <span>🟣 FL</span>
+                                                    <span>{{ $row['fastest_lap'] }}</span>
+                                                </span>
+                                            @else
+                                                <span class="text-zinc-400">{{ $row['fastest_lap'] }}</span>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Timing Tower Legend / Footer -->
+                <div class="flex flex-wrap items-center justify-between text-[10px] text-zinc-500 pt-3 mt-3 border-t border-zinc-800/80 gap-2">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-500"></span><span>Overall Fastest Sector</span></div>
+                        <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Podium Pace</span></div>
+                        <div class="flex items-center gap-1"><span class="px-1 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/40 text-[8px] font-bold">DRS</span><span>Interval &lt; 1.000s</span></div>
+                    </div>
+                    <div>
+                        <span>Timing Engine v2.4 &bull; Official FIA Paddock Telemetry</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Fastest Lap Honors Banner -->
             @if(isset($simulation['fastest_lap_overall']))
-                <div class="bg-zinc-900 border border-purple-500/40 rounded p-4 flex items-center justify-between text-xs font-mono shadow-md">
+                <div class="bg-zinc-900 border border-purple-500/40 rounded-lg p-4 flex items-center justify-between text-xs font-mono shadow-md">
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded bg-purple-950 border border-purple-500/40 flex items-center justify-center text-purple-300 font-black">
+                        <div class="w-8 h-8 rounded bg-purple-950 border border-purple-500/40 flex items-center justify-center text-purple-300 font-black text-sm">
                             ⏱️
                         </div>
                         <div>
@@ -511,32 +655,33 @@
                             <span class="text-white font-bold">{{ $simulation['fastest_lap_overall']['driver'] }} ({{ $simulation['fastest_lap_overall']['team'] }}) &bull; Lap {{ $simulation['fastest_lap_overall']['lap'] }}</span>
                         </div>
                     </div>
-                    <div class="text-base font-black text-purple-300">
-                        {{ $simulation['fastest_lap_overall']['time'] }}
+                    <div class="text-base font-black text-purple-300 flex items-center gap-1">
+                        <span>🟣</span>
+                        <span>{{ $simulation['fastest_lap_overall']['time'] }}</span>
                     </div>
                 </div>
             @endif
         </div>
 
         <!-- Right 1 Col: Live Pit-Wall Radio & Event Commentary Feed -->
-        <div class="space-y-6">
+        <div class="space-y-6 font-mono">
             <!-- Event Feed -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-lg">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 shadow-lg">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-800">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                        <h2 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Pit-Wall Radio & Incident Log</h2>
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-white">Pit-Wall Radio & Incident Log</h2>
                     </div>
-                    <span class="text-[10px] font-mono text-zinc-500">LIVE TELEMETRY</span>
+                    <span class="text-[10px] text-zinc-500">LIVE FEED</span>
                 </div>
 
-                <div id="telemetry-radio-feed" class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                <div id="telemetry-radio-feed" class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
                     @foreach($simulation['lap_events'] as $event)
                         <div x-show="currentLap >= {{ $event['lap'] }}"
                              x-transition:enter="transition ease-out duration-200"
                              x-transition:enter-start="opacity-0 -translate-y-1"
                              x-transition:enter-end="opacity-100 translate-y-0"
-                             class="p-3 rounded border text-xs font-mono {{ $event['type'] === 'overtake' ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : ($event['type'] === 'defense_loss' ? 'bg-amber-950/40 border-amber-500/40 text-amber-200' : ($event['type'] === 'telemetry_alert' ? 'bg-red-950/40 border-red-500/40 text-red-200' : ($event['type'] === 'pit_radio' ? 'bg-blue-950/40 border-blue-500/40 text-blue-200' : ($event['type'] === 'finish' ? 'bg-purple-950/40 border-purple-500/40 text-purple-200' : 'bg-zinc-950/60 border-zinc-800 text-zinc-300')))) }}">
+                             class="p-3 rounded border text-xs {{ $event['type'] === 'overtake' ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : ($event['type'] === 'defense_loss' ? 'bg-amber-950/40 border-amber-500/40 text-amber-200' : ($event['type'] === 'telemetry_alert' ? 'bg-red-950/40 border-red-500/40 text-red-200' : ($event['type'] === 'pit_radio' ? 'bg-blue-950/40 border-blue-500/40 text-blue-200' : ($event['type'] === 'finish' ? 'bg-purple-950/40 border-purple-500/40 text-purple-200' : 'bg-zinc-950/60 border-zinc-800 text-zinc-300')))) }}">
                             <div class="flex items-center justify-between text-[10px] font-bold uppercase mb-1 opacity-80">
                                 <span>LAP {{ $event['lap'] }}</span>
                                 <span class="tracking-wider">{{ strtoupper(str_replace('_', ' ', $event['type'])) }}</span>
@@ -548,7 +693,7 @@
             </div>
 
             <!-- Quick Action Navigation -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded p-5 shadow-lg space-y-2 text-xs font-mono">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 shadow-lg space-y-2 text-xs">
                 <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">Post-Race Commands</div>
                 <a href="{{ route('races.results', $race) }}" class="block p-2.5 rounded bg-emerald-950 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 hover:text-white font-bold transition-colors">
                     &rarr; View Official Race Debrief & Ledger
@@ -564,3 +709,4 @@
     </div>
 </div>
 @endsection
+

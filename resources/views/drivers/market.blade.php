@@ -55,22 +55,32 @@
                     $ovr = $agent->overallRating();
                     $cost = $agent->hiringCost();
                     $canAfford = $team->money >= $cost;
+                    $isLegend = $agent->isLegend();
+                    $tierBadge = $agent->tierBadge();
                 @endphp
-                <div class="bg-zinc-900/90 border border-zinc-800 rounded p-6 shadow-md transition-all flex flex-col justify-between hover:border-zinc-700">
+                <div class="rounded p-6 shadow-md transition-all flex flex-col justify-between relative overflow-hidden border {{ $isLegend ? 'border-amber-500/50 hover:border-amber-400 bg-gradient-to-b from-amber-950/20 via-zinc-900 to-zinc-950 shadow-amber-950/30' : 'border-zinc-800 hover:border-zinc-700 bg-zinc-900/90' }}">
+                    @if($isLegend)
+                        <div class="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-yellow-500 text-black text-[10px] font-mono font-black px-3 py-0.5 rounded-bl uppercase tracking-widest shadow-sm">
+                            👑 MOTORSPORT LEGEND
+                        </div>
+                    @endif
+
                     <div>
                         <!-- Card Header -->
                         <div class="flex items-start justify-between gap-3 mb-4">
                             <div>
                                 <div class="flex items-center gap-2">
                                     <h3 class="text-xl font-black text-white font-mono uppercase tracking-tight">{{ $agent->name }}</h3>
-                                    <span class="text-xs font-mono font-black px-2 py-0.5 rounded bg-zinc-800 text-cyan-300 border border-zinc-700">
+                                    <span class="text-xs font-mono font-black px-2 py-0.5 rounded {{ $isLegend ? 'bg-amber-950 text-amber-300 border border-amber-500/60' : 'bg-zinc-800 text-cyan-300 border border-zinc-700' }}">
                                         {{ $ovr }} OVR
                                     </span>
                                 </div>
-                                <span class="text-[10px] font-mono text-zinc-400 uppercase">UNCONTRACTED FREE AGENT</span>
+                                <span class="text-[10px] font-mono {{ $isLegend ? 'text-amber-400/90 font-bold' : 'text-zinc-400' }} uppercase">
+                                    {{ $isLegend ? '🏆 HALL OF FAME LEGEND &bull; FREE AGENT' : 'UNCONTRACTED FREE AGENT' }}
+                                </span>
                             </div>
 
-                            <div class="text-right">
+                            <div class="text-right {{ $isLegend ? 'mt-3 sm:mt-0' : '' }}">
                                 <span class="text-[10px] font-mono text-zinc-500 uppercase block">Signing Fee</span>
                                 <span class="text-sm font-mono font-black text-amber-400">{{ number_format($cost) }} CR</span>
                             </div>

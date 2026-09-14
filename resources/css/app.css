@@ -26,9 +26,9 @@ body {
 }
 
 /* ==========================================================================
-   🏎️ Custom Motorsport Pit-Wall Scrollbar (Global across all browsers & pages)
+   🏎️ Custom Motorsport Pit-Wall Scrollbar (Applied cleanly to root viewport)
    ========================================================================== */
-* {
+html, body {
     scrollbar-width: thin;
     scrollbar-color: #ea580c #09090b;
 }
@@ -65,4 +65,16 @@ body {
 
 ::-webkit-scrollbar-corner {
     background: #09090b;
+}
+
+/* Hide scrollbar for Chrome, Safari, Opera, Edge, Firefox */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none !important;
 }

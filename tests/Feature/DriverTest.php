@@ -8,6 +8,7 @@ use App\Models\RaceResult;
 use App\Models\Team;
 use App\Models\Transaction;
 use App\Models\User;
+use Database\Seeders\DriverSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -296,5 +297,39 @@ class DriverTest extends TestCase
 
         $this->assertSame(50000, $teamA->fresh()->money);
         $this->assertSame($teamB->id, $driverB->fresh()->team_id);
+    }
+
+    /**
+     * Test driver seeder includes top-tier Hall of Fame legends and they can be recruited.
+     */
+    public function test_driver_seeder_includes_legendary_drivers_and_they_can_be_hired(): void
+    {
+        $this->seed(DriverSeeder::class);
+
+        $legends = ['Ayrton Senna', 'Niki Lauda', 'Lewis Hamilton', 'Max Verstappen'];
+        foreach ($legends as $legendName) {
+            $driver = Driver::where('name', $legendName)->first();
+            $this->assertNotNull($driver, "Legend {$legendName} not found in database.");
+            $this->assertTrue($driver->isLegend());
+            $this->assertSame('LEGENDS', $driver->tierBadge());
+            $this->assertGreaterThanOrEqual(90, $driver->overallRating());
+        }
+
+        $user = User::factory()->create();
+        $team = Team::factory()->create([
+            'user_id' => $user->id,
+            'money' => 100000,
+        ]);
+
+        $senna = Driver::where('name', 'Ayrton Senna')->first();
+        $hiringCost = $senna->hiringCost();
+
+        $response = $this->actingAs($user)->post(route('drivers.hire', $senna));
+
+        $response->assertRedirect(route('drivers.index'));
+        $response->assertSessionHas('success');
+
+        $this->assertSame($team->id, $senna->fresh()->team_id);
+        $this->assertSame(100000 - $hiringCost, $team->fresh()->money);
     }
 }

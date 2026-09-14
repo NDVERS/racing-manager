@@ -46,13 +46,19 @@ class GarageController extends Controller
             ->get();
 
         $activeCar = $team->activeCar();
-        $ownedCarNames = $team->cars()->pluck('name')->toArray();
+        $ownedCarCounts = $team->cars()
+            ->selectRaw('name, count(*) as total')
+            ->groupBy('name')
+            ->pluck('total', 'name')
+            ->toArray();
+        $ownedCarNames = array_keys($ownedCarCounts);
 
         return view('garage.dealership', [
             'team' => $team,
             'templates' => $templates,
             'activeCar' => $activeCar,
             'ownedCarNames' => $ownedCarNames,
+            'ownedCarCounts' => $ownedCarCounts,
         ]);
     }
 
@@ -229,11 +235,11 @@ class GarageController extends Controller
                 ->with('error', 'Insufficient credits in team treasury to acquire '.$car->name.'. Required: '.number_format($purchasePrice).' CR, Available: '.number_format($team->money).' CR.');
         }
 
-        // Validation 3: Cegah duplikasi sasis yang sudah dimiliki
-        $alreadyOwned = $team->cars()->where('name', $car->name)->exists();
-        if ($alreadyOwned) {
+        // Validation 3: Cegah kepemilikan lebih dari 2 unit sasis untuk model yang sama (dukungan 2-Car Entry)
+        $ownedCount = $team->cars()->where('name', $car->name)->count();
+        if ($ownedCount >= 2) {
             return redirect()->route('garage.dealership')
-                ->with('warning', "You already own a {$car->name} chassis in your team fleet. Duplicate blueprints cannot be commissioned.");
+                ->with('warning', "You already own the maximum allowed 2 units of {$car->name} in your constructor fleet.");
         }
 
         DB::transaction(function () use ($team, $car, $purchasePrice) {

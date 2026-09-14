@@ -82,4 +82,31 @@ class Driver extends Model
     {
         return $this->salary * 3;
     }
+
+    /**
+     * Determine if this driver belongs to the elite Hall of Fame Legends tier.
+     */
+    public function isLegend(): bool
+    {
+        return $this->overallRating() >= 90 || in_array($this->name, ['Ayrton Senna', 'Niki Lauda', 'Lewis Hamilton', 'Max Verstappen'], true);
+    }
+
+    /**
+     * Get the descriptive driver performance tier badge.
+     */
+    public function tierBadge(): string
+    {
+        $ovr = $this->overallRating();
+        if ($this->isLegend() || $ovr >= 90) {
+            return 'LEGENDS';
+        }
+        if ($ovr >= 80) {
+            return 'TIER 1';
+        }
+        if ($ovr >= 70) {
+            return 'TIER 2';
+        }
+
+        return 'ROOKIE';
+    }
 }
