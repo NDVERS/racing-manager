@@ -201,7 +201,8 @@
             if (delta < interval) return;
             lastTime = currentTime - (delta % interval);
 
-            const lapDurationMs = 1200 / this.playbackSpeed; // ms per lap
+            const baseLapDurationMs = 6000;
+            const lapDurationMs = baseLapDurationMs / this.playbackSpeed; // ms per lap (6.0s on 1X, 3.0s on 2X, 1.2s on 5X)
             lapAccumulator += delta / lapDurationMs;
 
             while (lapAccumulator >= 1.0 && this.currentLap < this.totalLaps) {
