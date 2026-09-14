@@ -253,23 +253,22 @@
         const pos = (car && typeof car.position === 'number') ? car.position : (carIndex + 1);
         const avgLapTime = 75.0; // Reference lap time in seconds
         let distance;
+        let gapSec = 0;
+
+        if (car && typeof car.gap_seconds === 'number') {
+            gapSec = Math.max(0, car.gap_seconds);
+        } else if (car && car.gap && car.gap !== 'LEADER') {
+            const parsed = parseFloat(String(car.gap).replace(/[^0-9.]/g, ''));
+            gapSec = !isNaN(parsed) ? Math.max(0, parsed) : (pos - 1) * 1.8;
+        } else {
+            gapSec = (pos - 1) * 1.8;
+        }
 
         if (this.isFinished) {
             // Stack cars cleanly across finish line in finishing order
             const finishOffset = (pos - 1) * (totalLength * 0.015);
             distance = Math.max(0, (totalLength * 0.985) - finishOffset);
         } else {
-            // Gap in seconds relative to Leader (P1 has gap = 0s)
-            let gapSec = 0;
-            if (car && typeof car.gap_seconds === 'number') {
-                gapSec = Math.max(0, car.gap_seconds);
-            } else if (car && car.gap && car.gap !== 'LEADER') {
-                const parsed = parseFloat(String(car.gap).replace(/[^0-9.]/g, ''));
-                gapSec = !isNaN(parsed) ? Math.max(0, parsed) : (pos - 1) * 1.8;
-            } else {
-                gapSec = (pos - 1) * 1.8;
-            }
-
             // Gap offset as fraction of a full lap (e.g. 15s gap / 75s = 0.20 of track behind Leader)
             const gapOffset = gapSec / avgLapTime;
             
@@ -293,38 +292,69 @@
                 return defaultPos;
             }
 
-            // Perpendicular lateral offset (inside/outside racing line)
-            const step = 2.0;
-            const nextDist = (distance + step <= totalLength) ? distance + step : distance - step;
-            const ptNext = path.getPointAtLength(nextDist);
+            // 1. True Tangent & Normal Vector via Closed Loop Cyclic Modulo
+            const delta = 1.0;
+            const d1 = (distance - delta + totalLength) % totalLength;
+            const d2 = (distance + delta) % totalLength;
+            const pPrev = path.getPointAtLength(d1);
+            const pNext = path.getPointAtLength(d2);
 
-            let dx = ptNext.x - pt.x;
-            let dy = ptNext.y - pt.y;
-            if (nextDist < distance) {
-                dx = -dx;
-                dy = -dy;
+            if (!pPrev || !pNext || isNaN(pPrev.x) || isNaN(pNext.x)) {
+                return { x: Math.round(pt.x * 10) / 10, y: Math.round(pt.y * 10) / 10 };
             }
 
-            const len = Math.sqrt(dx * dx + dy * dy);
-            if (len > 0) {
-                const nx = -dy / len;
-                const ny = dx / len;
+            const dx = pNext.x - pPrev.x;
+            const dy = pNext.y - pPrev.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const nx = -dy / len;
+            const ny = dx / len;
 
-                // Stagger lateral line: even +3.5px, odd -3.5px
-                let lateralShift = (carIndex % 2 === 0 ? 3.5 : -3.5);
-                if (this.isFinished) {
-                    lateralShift = (pos % 2 === 0 ? 3.5 : -3.5);
+            // 2. Contextual & Safe Lateral Offset (max ±1.8px)
+            let isCloseBattle = false;
+            if (Array.isArray(this.drivers) && this.drivers.length > 1) {
+                const prevDriver = this.drivers[carIndex - 1];
+                const nextDriver = this.drivers[carIndex + 1];
+
+                const getDriverGap = (d, defaultIdx) => {
+                    if (!d) return null;
+                    if (typeof d.gap_seconds === 'number') return d.gap_seconds;
+                    if (d.gap && d.gap !== 'LEADER') {
+                        const p = parseFloat(String(d.gap).replace(/[^0-9.]/g, ''));
+                        return !isNaN(p) ? p : defaultIdx * 1.8;
+                    }
+                    return (d.position === 1 || defaultIdx === 0) ? 0 : defaultIdx * 1.8;
+                };
+
+                const myGap = gapSec;
+                if (prevDriver) {
+                    const prevGap = getDriverGap(prevDriver, carIndex - 1);
+                    if (prevGap !== null && Math.abs(myGap - prevGap) < 1.2) {
+                        isCloseBattle = true;
+                    }
                 }
-
-                const finalX = pt.x + (nx * lateralShift);
-                const finalY = pt.y + (ny * lateralShift);
-
-                if (!isNaN(finalX) && !isNaN(finalY)) {
-                    return {
-                        x: Math.round(finalX * 10) / 10,
-                        y: Math.round(finalY * 10) / 10
-                    };
+                if (!isCloseBattle && nextDriver) {
+                    const nextGap = getDriverGap(nextDriver, carIndex + 1);
+                    if (nextGap !== null && Math.abs(myGap - nextGap) < 1.2) {
+                        isCloseBattle = true;
+                    }
                 }
+            }
+
+            let lateralShift = 0.0;
+            if (this.isFinished) {
+                lateralShift = (pos % 2 === 0 ? 1.8 : -1.8);
+            } else if (isCloseBattle) {
+                lateralShift = (carIndex % 2 === 0 ? 1.8 : -1.8);
+            }
+
+            const finalX = pt.x + (nx * lateralShift);
+            const finalY = pt.y + (ny * lateralShift);
+
+            if (!isNaN(finalX) && !isNaN(finalY)) {
+                return {
+                    x: Math.round(finalX * 10) / 10,
+                    y: Math.round(finalY * 10) / 10
+                };
             }
 
             return { x: Math.round(pt.x * 10) / 10, y: Math.round(pt.y * 10) / 10 };
