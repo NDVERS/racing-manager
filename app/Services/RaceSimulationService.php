@@ -195,8 +195,31 @@ class RaceSimulationService
             ];
         }
 
+        $playerDriverNames = [mb_strtolower(trim($playerDriver->name))];
+        if ($isTwoCar && $playerDriver2) {
+            $playerDriverNames[] = mb_strtolower(trim($playerDriver2->name));
+        }
+
+        $reserveDriverNames = [
+            'Oscar Lind', 'Nico Visser', 'Felix Bauer', 'Jonas Koster',
+            'Gabriel Moreno', 'Sora Takahashi', 'Maxime Dupont', 'Pietro Moretti',
+            'Robin Van Der Berg', 'Kasper Solberg', 'Rafael Rossi', 'Dario Fontana',
+            'Frederik Holm', 'Julian Vance Jr.', 'Antonio Silva', 'Lucas Meyer',
+        ];
+        $reserveIdx = 0;
+
         // AI entries: If two-car mode, add both drivers per team (18 AI cars). If legacy 1-car, add driver 1 (9 AI cars).
         foreach ($this->aiGridPool as $index => $ai) {
+            $aiTeamName = $ai['team'];
+            if (mb_strtolower(trim($aiTeamName)) === mb_strtolower(trim($playerTeam->name))) {
+                $aiTeamName = 'Apex Dynamics GP';
+            }
+
+            $aiDriverName1 = $ai['driver1'];
+            if (in_array(mb_strtolower(trim($aiDriverName1)), $playerDriverNames, true)) {
+                $aiDriverName1 = $reserveDriverNames[$reserveIdx++] ?? ($aiDriverName1.' Jr.');
+            }
+
             // Driver 1 for AI Team
             $aiPerf1 = max(40, min(95, $ai['ovr1'] + random_int(-3, 3)));
             $aiCompound1 = $this->selectAiTire($weather);
@@ -206,8 +229,8 @@ class RaceSimulationService
                 'id' => 'ai_'.($index + 1).'_1',
                 'is_player' => false,
                 'car_slot' => 1,
-                'team_name' => $ai['team'],
-                'driver_name' => $ai['driver1'],
+                'team_name' => $aiTeamName,
+                'driver_name' => $aiDriverName1,
                 'car_name' => $ai['car1'],
                 'car_id' => null,
                 'driver_id' => null,
@@ -225,6 +248,11 @@ class RaceSimulationService
             ];
 
             if ($isTwoCar) {
+                $aiDriverName2 = $ai['driver2'];
+                if (in_array(mb_strtolower(trim($aiDriverName2)), $playerDriverNames, true)) {
+                    $aiDriverName2 = $reserveDriverNames[$reserveIdx++] ?? ($aiDriverName2.' Jr.');
+                }
+
                 // Driver 2 for AI Team
                 $aiPerf2 = max(40, min(95, $ai['ovr2'] + random_int(-3, 3)));
                 $aiCompound2 = $this->selectAiTire($weather);
@@ -234,8 +262,8 @@ class RaceSimulationService
                     'id' => 'ai_'.($index + 1).'_2',
                     'is_player' => false,
                     'car_slot' => 2,
-                    'team_name' => $ai['team'],
-                    'driver_name' => $ai['driver2'],
+                    'team_name' => $aiTeamName,
+                    'driver_name' => $aiDriverName2,
                     'car_name' => $ai['car2'],
                     'car_id' => null,
                     'driver_id' => null,
