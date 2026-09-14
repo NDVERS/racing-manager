@@ -115,15 +115,14 @@
     timer: null,
     selectedDriver: null,
     trackLength: 0,
-    carPositions: [],
     drivers: {{ Js::from($towerStandings) }},
     lapEvents: {{ Js::from($simulation['lap_events']) }},
 
     init() {
         this.$nextTick(() => {
-            if (this.$refs.circuitPath) {
-                this.trackLength = this.$refs.circuitPath.getTotalLength();
-                this.updateCarPositions();
+            const path = document.getElementById('race-circuit-master-path');
+            if (path && typeof path.getTotalLength === 'function') {
+                this.trackLength = path.getTotalLength();
             }
             this.startTicker();
         });
@@ -143,14 +142,12 @@
         }
         if (this.currentLap >= this.totalLaps) {
             this.isFinished = true;
-            this.updateCarPositions();
             return;
         }
         const intervalMs = Math.round(1000 / this.playbackSpeed);
         this.timer = setInterval(() => {
             if (this.currentLap < this.totalLaps) {
                 this.currentLap++;
-                this.updateCarPositions();
                 this.$nextTick(() => {
                     const feed = document.getElementById('telemetry-radio-feed');
                     if (feed) {
@@ -160,7 +157,6 @@
             }
             if (this.currentLap >= this.totalLaps) {
                 this.isFinished = true;
-                this.updateCarPositions();
                 clearInterval(this.timer);
                 this.timer = null;
             }
@@ -174,7 +170,6 @@
         }
         this.currentLap = this.totalLaps;
         this.isFinished = true;
-        this.updateCarPositions();
         this.$nextTick(() => {
             const feed = document.getElementById('telemetry-radio-feed');
             if (feed) {
@@ -183,51 +178,40 @@
         });
     },
 
-    updateCarPositions() {
-        if (!this.$refs.circuitPath) return;
-        if (!this.trackLength || this.trackLength <= 0) {
-            this.trackLength = this.$refs.circuitPath.getTotalLength();
-            if (!this.trackLength || this.trackLength <= 0) return;
+    getCarCoordinates(carIndex, car) {
+        const defaultPos = { x: 100, y: 270 };
+        const path = document.getElementById('race-circuit-master-path');
+        if (!path || typeof path.getTotalLength !== 'function') {
+            return defaultPos;
         }
-        const total = this.trackLength;
-        this.carPositions = this.drivers.map((driver) => {
-            let distance;
-            if (this.isFinished) {
-                distance = (total * 0.985) - ((driver.position - 1) * (total * 0.015));
-            } else {
-                const lapFactor = (this.currentLap * 0.94);
-                const posOffset = (driver.position - 1) * 0.034;
-                let loopFraction = (lapFactor - posOffset) % 1.0;
-                if (loopFraction < 0) {
-                    loopFraction += 1.0;
-                }
-                distance = loopFraction * total;
+        const totalLength = path.getTotalLength();
+        if (!totalLength || totalLength <= 0 || isNaN(totalLength)) {
+            return defaultPos;
+        }
+        
+        let distance;
+        const pos = (car && car.position) ? car.position : (carIndex + 1);
+        if (this.isFinished) {
+            distance = (totalLength * 0.985) - ((pos - 1) * (totalLength * 0.015));
+        } else {
+            const lapFactor = (this.currentLap * 0.94);
+            const posOffset = (pos - 1) * 0.034;
+            let loopFraction = (lapFactor - posOffset) % 1.0;
+            if (loopFraction < 0) {
+                loopFraction += 1.0;
             }
-            distance = Math.max(0, Math.min(total, distance));
-            const pt = this.$refs.circuitPath.getPointAtLength(distance);
-            return {
-                driver_name: driver.driver_name,
-                team_name: driver.team_name,
-                car_name: driver.car_name,
-                position: driver.position,
-                is_player: driver.is_player,
-                slot: driver.slot,
-                tire_compound: driver.tire_compound,
-                driving_mode: driver.driving_mode,
-                gap: driver.gap,
-                interval_text: driver.interval_text,
-                interval_sec: driver.interval_sec,
-                fastest_lap: driver.fastest_lap,
-                s1: driver.s1,
-                s2: driver.s2,
-                s3: driver.s3,
-                is_s1_fastest: driver.is_s1_fastest,
-                is_s2_fastest: driver.is_s2_fastest,
-                is_s3_fastest: driver.is_s3_fastest,
-                x: Math.round(pt.x * 10) / 10,
-                y: Math.round(pt.y * 10) / 10,
-            };
-        });
+            distance = loopFraction * totalLength;
+        }
+        distance = Math.max(0, Math.min(totalLength, distance));
+        try {
+            const pt = path.getPointAtLength(distance);
+            if (pt && typeof pt.x === 'number' && !isNaN(pt.x) && typeof pt.y === 'number' && !isNaN(pt.y)) {
+                return { x: Math.round(pt.x * 10) / 10, y: Math.round(pt.y * 10) / 10 };
+            }
+        } catch (e) {
+            // fallback
+        }
+        return defaultPos;
     },
 
     getDriverEvents(driverName) {
@@ -436,7 +420,7 @@
                       stroke-width="4"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      :stroke-dasharray="(trackLength * {{ $s1End }}) + ' ' + trackLength"
+                      :stroke-dasharray="(trackLength > 0 ? (trackLength * {{ $s1End }}) : 300) + ' ' + (trackLength > 0 ? trackLength : 1000)"
                       stroke-dashoffset="0"
                       opacity="0.85" />
 
@@ -447,7 +431,7 @@
                       stroke-width="4"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      :stroke-dasharray="(trackLength * {{ $s2End - $s1End }}) + ' ' + trackLength"
+                      :stroke-dasharray="(trackLength > 0 ? (trackLength * {{ $s2End - $s1End }}) : 300) + ' ' + (trackLength > 0 ? trackLength : 1000)"
                       :stroke-dashoffset="-(trackLength * {{ $s1End }})"
                       opacity="0.85" />
 
@@ -458,7 +442,7 @@
                       stroke-width="4"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      :stroke-dasharray="(trackLength * {{ 1.0 - $s2End }}) + ' ' + trackLength"
+                      :stroke-dasharray="(trackLength > 0 ? (trackLength * {{ 1.0 - $s2End }}) : 300) + ' ' + (trackLength > 0 ? trackLength : 1000)"
                       :stroke-dashoffset="-(trackLength * {{ $s2End }})"
                       opacity="0.85" />
 
@@ -469,16 +453,16 @@
                       stroke-width="5"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      :stroke-dasharray="(trackLength * {{ $drsLength }}) + ' ' + trackLength"
+                      :stroke-dasharray="(trackLength > 0 ? (trackLength * {{ $drsLength }}) : 200) + ' ' + (trackLength > 0 ? trackLength : 1000)"
                       :stroke-dashoffset="-(trackLength * {{ $drsStart }})"
                       class="animate-pulse" />
 
-                <!-- 6. Hidden Reference Path for Alpine.js coordinate calculation -->
-                <path x-ref="circuitPath"
+                <!-- 6. Single Master Reference Path for Alpine.js coordinate calculation -->
+                <path id="race-circuit-master-path"
                       d="{{ $circuitSvgPath }}"
                       fill="none"
                       stroke="transparent"
-                      stroke-width="0" />
+                      stroke-width="1" />
 
                 <!-- 7. Start / Finish Line Banner -->
                 <g transform="translate(100, 270)">
@@ -496,54 +480,42 @@
                     </g>
                 @endif
 
-                <!-- 8. GPS Car Markers (20 Cars Positioned Dynamically) -->
-                <template x-for="(car, idx) in carPositions" :key="car.driver_name">
-                    <g :transform="'translate(' + car.x + ',' + car.y + ')'"
-                       class="cursor-pointer transition-all duration-300 ease-out"
-                       @click="selectedDriver = car">
-                        <!-- Car #1 (Player) -->
-                        <template x-if="car.is_player && car.slot === 1">
-                            <g>
+                <!-- 8. GPS Car Markers (20 Cars Native SVG Elements) -->
+                <g id="car-markers">
+                    @foreach($towerStandings as $idx => $driver)
+                        <g :transform="'translate(' + getCarCoordinates({{ $idx }}, {{ Js::from($driver) }}).x + ',' + getCarCoordinates({{ $idx }}, {{ Js::from($driver) }}).y + ')'"
+                           class="cursor-pointer transition-transform duration-300 ease-out"
+                           @click="selectedDriver = {{ Js::from($driver) }}">
+                            @if($driver['is_player'] && $driver['slot'] === 1)
+                                <!-- Car #1 (Player) -->
                                 <circle r="14" fill="#06b6d4" opacity="0.35" class="animate-ping" />
                                 <circle r="9" fill="#083344" stroke="#06b6d4" stroke-width="2.5" />
                                 <circle r="4.5" fill="#22d3ee" />
                                 <rect x="-11" y="-23" width="22" height="13" rx="3" fill="#06b6d4" stroke="#ffffff" stroke-width="1" />
                                 <text x="0" y="-14" fill="#000000" font-size="8.5" font-family="monospace" font-weight="900" text-anchor="middle">C1</text>
-                            </g>
-                        </template>
-
-                        <!-- Car #2 (Player) -->
-                        <template x-if="car.is_player && car.slot === 2">
-                            <g>
+                            @elseif($driver['is_player'] && $driver['slot'] === 2)
+                                <!-- Car #2 (Player) -->
                                 <circle r="14" fill="#3b82f6" opacity="0.35" class="animate-ping" />
                                 <circle r="9" fill="#172554" stroke="#3b82f6" stroke-width="2.5" />
                                 <circle r="4.5" fill="#60a5fa" />
                                 <rect x="-11" y="-23" width="22" height="13" rx="3" fill="#3b82f6" stroke="#ffffff" stroke-width="1" />
                                 <text x="0" y="-14" fill="#ffffff" font-size="8.5" font-family="monospace" font-weight="900" text-anchor="middle">C2</text>
-                            </g>
-                        </template>
-
-                        <!-- P1 Leader (if AI) -->
-                        <template x-if="!car.is_player && car.position === 1">
-                            <g>
+                            @elseif($driver['position'] === 1)
+                                <!-- P1 Leader (if AI) -->
                                 <circle r="12" fill="#eab308" opacity="0.25" class="animate-pulse" />
                                 <circle r="8" fill="#422006" stroke="#eab308" stroke-width="2" />
                                 <circle r="4" fill="#fde047" />
                                 <rect x="-11" y="-21" width="22" height="12" rx="3" fill="#eab308" stroke="#000000" stroke-width="0.5" />
                                 <text x="0" y="-12" fill="#000000" font-size="8" font-family="monospace" font-weight="900" text-anchor="middle">P1</text>
-                            </g>
-                        </template>
-
-                        <!-- Other AI Competitors -->
-                        <template x-if="!car.is_player && car.position > 1">
-                            <g class="group">
+                            @else
+                                <!-- Other AI Competitors -->
                                 <circle r="5.5" fill="#27272a" stroke="#71717a" stroke-width="1.5" class="hover:stroke-amber-400 hover:fill-amber-950 transition-colors" />
                                 <circle r="2.5" fill="#a1a1aa" />
-                                <title x-text="'P' + car.position + ' ' + car.driver_name + ' (' + car.team_name + ')'"></title>
-                            </g>
-                        </template>
-                    </g>
-                </template>
+                                <title>{{ 'P' . $driver['position'] . ' ' . $driver['driver_name'] . ' (' . $driver['team_name'] . ')' }}</title>
+                            @endif
+                        </g>
+                    @endforeach
+                </g>
             </svg>
         </div>
 
