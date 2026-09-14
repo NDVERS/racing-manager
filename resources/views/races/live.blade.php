@@ -15,6 +15,7 @@
     // Pre-process Timing Tower Standings, Micro-Sectors, Intervals, and FL
     $towerStandings = [];
     $prevTotalSeconds = null;
+    $leaderSeconds = $simulation['standings'][0]['total_seconds'] ?? 1000.0;
     $fastestLapOverallTime = $simulation['fastest_lap_overall']['time'] ?? null;
     $fastestDriverName = $simulation['fastest_lap_overall']['driver'] ?? null;
 
@@ -39,9 +40,11 @@
         if ($idx === 0) {
             $intervalText = 'LEADER';
             $intervalSec = 0.0;
+            $gapSeconds = 0.0;
         } else {
             $intervalSec = max(0.045, $currSeconds - $prevTotalSeconds);
             $intervalText = '+' . number_format($intervalSec, 3) . 's';
+            $gapSeconds = max(0.0, $currSeconds - $leaderSeconds);
         }
         $prevTotalSeconds = $currSeconds;
 
@@ -60,6 +63,7 @@
 
         $towerStandings[] = array_merge($driver, [
             'position' => $idx + 1,
+            'gap_seconds' => round($gapSeconds, 3),
             'interval_text' => $intervalText,
             'interval_sec' => $intervalSec,
             'start_grid' => $startGridPos,
@@ -188,30 +192,78 @@
         if (!totalLength || totalLength <= 0 || isNaN(totalLength)) {
             return defaultPos;
         }
-        
-        let distance;
+
         const pos = (car && car.position) ? car.position : (carIndex + 1);
+        const avgLapTime = 75.0; // Benchmark seconds for 1 full lap
+        let distance;
+
         if (this.isFinished) {
-            distance = (totalLength * 0.985) - ((pos - 1) * (totalLength * 0.015));
+            // Ordered finish across the line
+            distance = (totalLength * 0.985) - ((pos - 1) * (totalLength * 0.016));
         } else {
-            const lapFactor = (this.currentLap * 0.94);
-            const posOffset = (pos - 1) * 0.034;
-            let loopFraction = (lapFactor - posOffset) % 1.0;
-            if (loopFraction < 0) {
-                loopFraction += 1.0;
+            // Gap in seconds relative to Leader
+            let gapSec = 0;
+            if (car && typeof car.gap_seconds === 'number') {
+                gapSec = car.gap_seconds;
+            } else if (car && car.gap && car.gap !== 'LEADER') {
+                const parsed = parseFloat(String(car.gap).replace(/[^0-9.]/g, ''));
+                gapSec = !isNaN(parsed) ? parsed : (pos - 1) * 1.8;
+            } else {
+                gapSec = (pos - 1) * 1.8;
             }
-            distance = loopFraction * totalLength;
+
+            // Realistic circuit spread: gap / avgLapTime
+            const gapOffset = gapSec / avgLapTime;
+            const leaderProgress = (this.currentLap * 0.95);
+
+            // Normalized fractional track position [0.0, 1.0)
+            let trackFraction = ((leaderProgress - gapOffset) % 1.0 + 1.0) % 1.0;
+            distance = trackFraction * totalLength;
         }
+
         distance = Math.max(0, Math.min(totalLength, distance));
+
         try {
             const pt = path.getPointAtLength(distance);
-            if (pt && typeof pt.x === 'number' && !isNaN(pt.x) && typeof pt.y === 'number' && !isNaN(pt.y)) {
-                return { x: Math.round(pt.x * 10) / 10, y: Math.round(pt.y * 10) / 10 };
+            if (!pt || isNaN(pt.x) || isNaN(pt.y)) {
+                return defaultPos;
             }
+
+            // Perpendicular lateral offset to prevent train clustering and show side-by-side battling
+            const step = 2.0;
+            const nextDist = (distance + step <= totalLength) ? distance + step : distance - step;
+            const ptNext = path.getPointAtLength(nextDist);
+
+            let dx = ptNext.x - pt.x;
+            let dy = ptNext.y - pt.y;
+            if (nextDist < distance) {
+                dx = -dx;
+                dy = -dy;
+            }
+
+            const len = Math.sqrt(dx * dx + dy * dy);
+            if (len > 0) {
+                const nx = -dy / len;
+                const ny = dx / len;
+
+                // Alternate racing line inside/outside: even +3.5px, odd -3.5px
+                let lateralShift = (carIndex % 2 === 0 ? 3.5 : -3.5);
+                if (this.isFinished) {
+                    lateralShift = (pos % 2 === 0 ? 3.5 : -3.5);
+                }
+
+                const finalX = pt.x + (nx * lateralShift);
+                const finalY = pt.y + (ny * lateralShift);
+                return {
+                    x: Math.round(finalX * 10) / 10,
+                    y: Math.round(finalY * 10) / 10
+                };
+            }
+
+            return { x: Math.round(pt.x * 10) / 10, y: Math.round(pt.y * 10) / 10 };
         } catch (e) {
-            // fallback
+            return defaultPos;
         }
-        return defaultPos;
     },
 
     getDriverEvents(driverName) {
@@ -480,7 +532,7 @@
                     </g>
                 @endif
 
-                <!-- 8. GPS Car Markers (20 Cars Native SVG Elements) -->
+                <!-- 8. GPS Car Markers (20 Cars Native SVG Elements with Physics Spread & Lateral Racing Line) -->
                 <g id="car-markers">
                     @foreach($towerStandings as $idx => $driver)
                         <g :transform="'translate(' + getCarCoordinates({{ $idx }}, {{ Js::from($driver) }}).x + ',' + getCarCoordinates({{ $idx }}, {{ Js::from($driver) }}).y + ')'"
