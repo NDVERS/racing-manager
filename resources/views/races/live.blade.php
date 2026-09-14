@@ -292,72 +292,11 @@
                 return defaultPos;
             }
 
-            // 1. True Tangent & Normal Vector via Closed Loop Cyclic Modulo
-            const delta = 1.0;
-            const d1 = (distance - delta + totalLength) % totalLength;
-            const d2 = (distance + delta) % totalLength;
-            const pPrev = path.getPointAtLength(d1);
-            const pNext = path.getPointAtLength(d2);
-
-            if (!pPrev || !pNext || isNaN(pPrev.x) || isNaN(pNext.x)) {
-                return { x: Math.round(pt.x * 10) / 10, y: Math.round(pt.y * 10) / 10 };
-            }
-
-            const dx = pNext.x - pPrev.x;
-            const dy = pNext.y - pPrev.y;
-            const len = Math.hypot(dx, dy) || 1;
-            const nx = -dy / len;
-            const ny = dx / len;
-
-            // 2. Contextual & Safe Lateral Offset (max ±1.8px)
-            let isCloseBattle = false;
-            if (Array.isArray(this.drivers) && this.drivers.length > 1) {
-                const prevDriver = this.drivers[carIndex - 1];
-                const nextDriver = this.drivers[carIndex + 1];
-
-                const getDriverGap = (d, defaultIdx) => {
-                    if (!d) return null;
-                    if (typeof d.gap_seconds === 'number') return d.gap_seconds;
-                    if (d.gap && d.gap !== 'LEADER') {
-                        const p = parseFloat(String(d.gap).replace(/[^0-9.]/g, ''));
-                        return !isNaN(p) ? p : defaultIdx * 1.8;
-                    }
-                    return (d.position === 1 || defaultIdx === 0) ? 0 : defaultIdx * 1.8;
-                };
-
-                const myGap = gapSec;
-                if (prevDriver) {
-                    const prevGap = getDriverGap(prevDriver, carIndex - 1);
-                    if (prevGap !== null && Math.abs(myGap - prevGap) < 1.2) {
-                        isCloseBattle = true;
-                    }
-                }
-                if (!isCloseBattle && nextDriver) {
-                    const nextGap = getDriverGap(nextDriver, carIndex + 1);
-                    if (nextGap !== null && Math.abs(myGap - nextGap) < 1.2) {
-                        isCloseBattle = true;
-                    }
-                }
-            }
-
-            let lateralShift = 0.0;
-            if (this.isFinished) {
-                lateralShift = (pos % 2 === 0 ? 1.8 : -1.8);
-            } else if (isCloseBattle) {
-                lateralShift = (carIndex % 2 === 0 ? 1.8 : -1.8);
-            }
-
-            const finalX = pt.x + (nx * lateralShift);
-            const finalY = pt.y + (ny * lateralShift);
-
-            if (!isNaN(finalX) && !isNaN(finalY)) {
-                return {
-                    x: Math.round(finalX * 10) / 10,
-                    y: Math.round(finalY * 10) / 10
-                };
-            }
-
-            return { x: Math.round(pt.x * 10) / 10, y: Math.round(pt.y * 10) / 10 };
+            // Strictly locked to centerline of the 20px asphalt track (0px lateral shift)
+            return {
+                x: Math.round(pt.x * 10) / 10,
+                y: Math.round(pt.y * 10) / 10
+            };
         } catch (e) {
             return defaultPos;
         }
@@ -637,29 +576,29 @@
                            @click="selectedDriver = {{ Js::from($driver) }}">
                             @if($driver['is_player'] && $driver['slot'] === 1)
                                 <!-- Car #1 (Player) -->
-                                <circle r="14" fill="#06b6d4" opacity="0.35" class="animate-ping" />
-                                <circle r="9" fill="#083344" stroke="#06b6d4" stroke-width="2.5" />
-                                <circle r="4.5" fill="#22d3ee" />
+                                <circle cx="0" cy="0" r="14" fill="#06b6d4" opacity="0.35" class="animate-ping" />
+                                <circle cx="0" cy="0" r="9" fill="#083344" stroke="#06b6d4" stroke-width="2.5" />
+                                <circle cx="0" cy="0" r="4.5" fill="#22d3ee" />
                                 <rect x="-11" y="-23" width="22" height="13" rx="3" fill="#06b6d4" stroke="#ffffff" stroke-width="1" />
                                 <text x="0" y="-14" fill="#000000" font-size="8.5" font-family="monospace" font-weight="900" text-anchor="middle">C1</text>
                             @elseif($driver['is_player'] && $driver['slot'] === 2)
                                 <!-- Car #2 (Player) -->
-                                <circle r="14" fill="#3b82f6" opacity="0.35" class="animate-ping" />
-                                <circle r="9" fill="#172554" stroke="#3b82f6" stroke-width="2.5" />
-                                <circle r="4.5" fill="#60a5fa" />
+                                <circle cx="0" cy="0" r="14" fill="#3b82f6" opacity="0.35" class="animate-ping" />
+                                <circle cx="0" cy="0" r="9" fill="#172554" stroke="#3b82f6" stroke-width="2.5" />
+                                <circle cx="0" cy="0" r="4.5" fill="#60a5fa" />
                                 <rect x="-11" y="-23" width="22" height="13" rx="3" fill="#3b82f6" stroke="#ffffff" stroke-width="1" />
                                 <text x="0" y="-14" fill="#ffffff" font-size="8.5" font-family="monospace" font-weight="900" text-anchor="middle">C2</text>
                             @elseif($driver['position'] === 1)
                                 <!-- P1 Leader (if AI) -->
-                                <circle r="12" fill="#eab308" opacity="0.25" class="animate-pulse" />
-                                <circle r="8" fill="#422006" stroke="#eab308" stroke-width="2" />
-                                <circle r="4" fill="#fde047" />
+                                <circle cx="0" cy="0" r="12" fill="#eab308" opacity="0.25" class="animate-pulse" />
+                                <circle cx="0" cy="0" r="8" fill="#422006" stroke="#eab308" stroke-width="2" />
+                                <circle cx="0" cy="0" r="4" fill="#fde047" />
                                 <rect x="-11" y="-21" width="22" height="12" rx="3" fill="#eab308" stroke="#000000" stroke-width="0.5" />
                                 <text x="0" y="-12" fill="#000000" font-size="8" font-family="monospace" font-weight="900" text-anchor="middle">P1</text>
                             @else
                                 <!-- Other AI Competitors -->
-                                <circle r="5.5" fill="#27272a" stroke="#71717a" stroke-width="1.5" class="hover:stroke-amber-400 hover:fill-amber-950 transition-colors" />
-                                <circle r="2.5" fill="#a1a1aa" />
+                                <circle cx="0" cy="0" r="5.5" fill="#27272a" stroke="#71717a" stroke-width="1.5" class="hover:stroke-amber-400 hover:fill-amber-950 transition-colors" />
+                                <circle cx="0" cy="0" r="2.5" fill="#a1a1aa" />
                                 <title>{{ 'P' . $driver['position'] . ' ' . $driver['driver_name'] . ' (' . $driver['team_name'] . ')' }}</title>
                             @endif
                         </g>
