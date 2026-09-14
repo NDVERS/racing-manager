@@ -153,6 +153,7 @@
     totalLaps: {{ max(1, (int)$race->laps) }},
     isFinished: false,
     timer: null,
+    subLapProgress: 0.0,
     selectedDriver: null,
     trackLength: 0,
     drivers: {{ Js::from($towerStandings) }},
@@ -177,16 +178,29 @@
 
     startTicker() {
         if (this.timer) {
-            clearInterval(this.timer);
+            cancelAnimationFrame(this.timer);
             this.timer = null;
         }
         if (this.currentLap >= this.totalLaps) {
             this.isFinished = true;
+            this.subLapProgress = 1.0;
             return;
         }
-        const intervalMs = Math.round(1000 / this.playbackSpeed);
-        this.timer = setInterval(() => {
-            if (this.currentLap < this.totalLaps) {
+
+        let lastTime = performance.now();
+        let lapAccumulator = this.subLapProgress || 0.0;
+
+        const animate = (currentTime) => {
+            if (this.isFinished) return;
+
+            const deltaMs = currentTime - lastTime;
+            lastTime = currentTime;
+
+            const lapDurationMs = 1200 / this.playbackSpeed; // ms per lap
+            lapAccumulator += deltaMs / lapDurationMs;
+
+            while (lapAccumulator >= 1.0 && this.currentLap < this.totalLaps) {
+                lapAccumulator -= 1.0;
                 this.currentLap++;
                 this.$nextTick(() => {
                     const feed = document.getElementById('telemetry-radio-feed');
@@ -195,20 +209,27 @@
                     }
                 });
             }
+
             if (this.currentLap >= this.totalLaps) {
                 this.isFinished = true;
-                clearInterval(this.timer);
-                this.timer = null;
+                this.subLapProgress = 1.0;
+                return;
             }
-        }, intervalMs);
+
+            this.subLapProgress = lapAccumulator;
+            this.timer = requestAnimationFrame(animate);
+        };
+
+        this.timer = requestAnimationFrame(animate);
     },
 
     instantSkip() {
         if (this.timer) {
-            clearInterval(this.timer);
+            cancelAnimationFrame(this.timer);
             this.timer = null;
         }
         this.currentLap = this.totalLaps;
+        this.subLapProgress = 1.0;
         this.isFinished = true;
         this.$nextTick(() => {
             const feed = document.getElementById('telemetry-radio-feed');
@@ -230,7 +251,7 @@
         }
 
         const pos = (car && typeof car.position === 'number') ? car.position : (carIndex + 1);
-        const avgLapTime = 75.0; // Standard reference lap time in seconds
+        const avgLapTime = 75.0; // Reference lap time in seconds
         let distance;
 
         if (this.isFinished) {
@@ -249,14 +270,14 @@
                 gapSec = (pos - 1) * 1.8;
             }
 
-            // Gap offset as fraction of a lap (e.g. 15s gap / 75s = 0.20 behind Leader)
+            // Gap offset as fraction of a full lap (e.g. 15s gap / 75s = 0.20 of track behind Leader)
             const gapOffset = gapSec / avgLapTime;
             
-            // Leader moves FORWARD around the circuit with each lap:
-            const leaderProgress = (this.currentLap * 0.35) + 0.15;
+            // Continuous leader position across current lap (0.0 to 1.0 full loop):
+            const leaderTrackPos = this.subLapProgress;
 
-            // Position of trailing car MUST BE BEHIND the Leader (subtracted):
-            let diff = leaderProgress - gapOffset;
+            // Trailing car position (strictly behind Leader along the racing line):
+            let diff = leaderTrackPos - gapOffset;
             let trackFraction = ((diff % 1.0) + 1.0) % 1.0;
             if (isNaN(trackFraction) || trackFraction < 0) {
                 trackFraction = 0;
@@ -272,7 +293,7 @@
                 return defaultPos;
             }
 
-            // Perpendicular lateral offset (inside/outside line)
+            // Perpendicular lateral offset (inside/outside racing line)
             const step = 2.0;
             const nextDist = (distance + step <= totalLength) ? distance + step : distance - step;
             const ptNext = path.getPointAtLength(nextDist);
@@ -451,7 +472,7 @@
                 <!-- Sector Active Indicator -->
                 <div class="px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-400 flex items-center gap-1.5">
                     <span class="text-zinc-500 uppercase">Sector:</span>
-                    <span class="text-amber-400 font-black" x-text="isFinished ? 'S3/FINISH' : ((currentLap % 3 === 1) ? 'S1 APEX' : ((currentLap % 3 === 2) ? 'S2 INFIELD' : 'S3 CHICANE'))"></span>
+                    <span class="text-amber-400 font-black" x-text="isFinished ? 'S3/FINISH' : (subLapProgress < 0.35 ? 'S1 SPEED TRAP' : (subLapProgress < 0.70 ? 'S2 INFIELD APEX' : 'S3 CHICANE'))"></span>
                 </div>
 
                 <!-- DRS Status -->
@@ -463,7 +484,7 @@
                 <!-- Telemetry Progress -->
                 <div class="px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-400 hidden md:flex items-center gap-1.5">
                     <span class="text-zinc-500 uppercase">Race Dist:</span>
-                    <strong class="text-white" x-text="Math.round((currentLap / totalLaps) * 100) + '%'"></strong>
+                    <strong class="text-white" x-text="isFinished ? '100%' : (Math.min(100, Math.round(((currentLap - 1 + subLapProgress) / totalLaps) * 100)) + '%')"></strong>
                 </div>
             </div>
         </div>
@@ -582,7 +603,7 @@
                 <g id="car-markers">
                     @foreach($towerStandings as $idx => $driver)
                         <g :transform="'translate(' + getCarCoordinates({{ $idx }}, {{ Js::from($driver) }}).x + ',' + getCarCoordinates({{ $idx }}, {{ Js::from($driver) }}).y + ')'"
-                           class="cursor-pointer transition-transform duration-300 ease-out"
+                           class="cursor-pointer transition-transform duration-100 ease-linear"
                            @click="selectedDriver = {{ Js::from($driver) }}">
                             @if($driver['is_player'] && $driver['slot'] === 1)
                                 <!-- Car #1 (Player) -->
