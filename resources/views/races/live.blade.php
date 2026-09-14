@@ -284,13 +284,20 @@
         } else {
             // Gap offset as fraction of a full lap (e.g. 15s gap / 75s = 0.20 of track behind Leader)
             const gapOffset = gapSec / avgLapTime;
-            
-            // Continuous leader position across current lap (0.0 to 1.0 full loop):
-            const leaderTrackPos = this.subLapProgress;
 
-            // Trailing car position (strictly behind Leader along the racing line):
-            let diff = leaderTrackPos - gapOffset;
-            let trackFraction = ((diff % 1.0) + 1.0) % 1.0;
+            // Total cumulative progress in laps (e.g., Lap 1 at 20% = 0.20 laps)
+            const leaderTotalLaps = (Math.max(1, this.currentLap) - 1) + (this.subLapProgress || 0.0);
+            const carTotalLaps = leaderTotalLaps - gapOffset;
+
+            let trackFraction;
+            if (carTotalLaps <= 0) {
+                // Di Lap 1 saat mobil tertinggal di grid start, tahan di area garis start/grid (tidak boleh wrap ke depan P1)
+                const gridOffset = (pos - 1) * 0.003;
+                trackFraction = Math.max(0.001, 0.02 - gridOffset);
+            } else {
+                trackFraction = carTotalLaps % 1.0;
+            }
+
             if (isNaN(trackFraction) || trackFraction < 0) {
                 trackFraction = 0;
             }
