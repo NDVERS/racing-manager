@@ -80,29 +80,65 @@
         ]);
     }
 
-    // Determine Circuit SVG Layout Path based on track type / location
+    // Determine Circuit SVG Layout Path based on track type / location (5 Distinct Layouts)
     $trackType = $race->track_type ?? 'balanced';
     $location = strtolower($race->location ?? '');
+    $raceName = strtolower($race->name ?? '');
 
-    if ($trackType === 'high_speed' || str_contains($location, 'sentul') || str_contains($location, 'jakarta')) {
-        $circuitLayoutName = 'High-Speed Aerodynamic Layout (Sentul / Jakarta)';
-        $circuitDesc = 'Long front straight with DRS activation zone, high-speed flowing sweeps & heavy braking Turn 1.';
-        $circuitSvgPath = 'M 90 270 L 680 270 C 735 270 755 235 755 190 C 755 145 715 125 660 125 L 340 125 C 290 125 275 85 245 65 C 215 45 170 45 135 65 C 80 100 55 160 55 210 C 55 250 70 270 90 270 Z';
-        $drsStart = 0.05;
-        $drsLength = 0.35;
-        $s1End = 0.33;
-        $s2End = 0.68;
-    } elseif ($trackType === 'technical' || str_contains($location, 'cimahi') || str_contains($location, 'bandung')) {
-        $circuitLayoutName = 'Technical Hairpin & Chicane Layout (Cimahi / Bandung)';
-        $circuitDesc = 'Tight apex chicanes, high downforce complex & multiple switchback hairpin sections.';
-        $circuitSvgPath = 'M 100 270 L 440 270 C 480 270 505 240 495 210 C 485 180 445 180 425 150 C 405 120 435 80 495 80 L 650 80 C 710 80 740 120 740 165 C 740 215 690 255 635 255 L 580 255 C 550 255 540 295 490 295 L 240 295 C 175 295 135 250 135 190 C 135 135 175 105 215 105 L 320 105 C 350 105 360 65 320 55 C 260 45 150 45 95 85 C 45 125 45 220 100 270 Z';
-        $drsStart = 0.02;
-        $drsLength = 0.20;
+    // 1. Sentul Speed Circuit (Bogor) - Classic Permanent High-Speed
+    if (str_contains($location, 'sentul') || str_contains($raceName, 'sentul')) {
+        $circuitLayoutName = 'Sentul International Circuit (Permanent High-Speed Layout)';
+        $circuitDesc = 'Classic permanent high-speed circuit with twin parallel straights, heavy braking Turn 1, and wide aerodynamic sweepers.';
+        $circuitSvgPath = 'M 100 280 L 680 280 C 730 280 750 250 750 210 C 750 170 710 150 660 150 L 320 150 C 280 150 260 100 220 90 C 180 80 140 80 110 110 C 70 150 60 210 60 250 C 60 280 80 280 100 280 Z';
+        $drsStart = 0.03;
+        $drsLength = 0.32;
         $s1End = 0.35;
-        $s2End = 0.70;
-    } else {
-        $circuitLayoutName = 'Balanced Coastal Flowing Circuit (Mandalika)';
-        $circuitDesc = 'Rhythmic medium-speed corners, coastal sweepers, flowing S-bends and high-traction DRS straight.';
+        $s2End = 0.68;
+    }
+    // 2. Jakarta Night Prix (Ancol) - Urban Street Circuit
+    elseif (str_contains($location, 'jakarta') || str_contains($raceName, 'jakarta')) {
+        $circuitLayoutName = 'Jakarta International E-Prix (Urban Street Layout)';
+        $circuitDesc = 'Ancol-inspired urban street circuit characterized by 90-degree corners, narrow concrete chicanes, and high-speed boulevard straights.';
+        $circuitSvgPath = 'M 100 290 L 640 290 C 670 290 690 270 690 240 L 690 190 C 690 160 670 140 640 140 L 530 140 C 500 140 490 100 460 90 L 360 90 C 330 90 310 120 310 150 L 310 200 C 310 230 270 240 240 240 L 160 240 C 110 240 70 250 70 270 C 70 290 80 290 100 290 Z';
+        $drsStart = 0.02;
+        $drsLength = 0.28;
+        $s1End = 0.30;
+        $s2End = 0.65;
+    }
+    // 3. Mandalika Coastal Challenge (Lombok) - Modern Oceanfront Flowing
+    elseif (str_contains($location, 'mandalika') || str_contains($raceName, 'mandalika')) {
+        $circuitLayoutName = 'Pertamina Mandalika Circuit (Oceanfront Flowing Layout)';
+        $circuitDesc = 'Modern coastal circuit with fast sweeping S-curves, oceanfront loop, and smooth rhythmic medium-to-high speed corners.';
+        $circuitSvgPath = 'M 110 270 L 620 270 C 675 270 735 235 735 185 C 735 135 685 105 630 105 L 485 105 C 445 105 425 65 385 65 C 345 65 335 115 295 115 L 215 115 C 175 115 155 75 115 75 C 65 75 55 135 55 185 C 55 245 75 270 110 270 Z';
+        $drsStart = 0.04;
+        $drsLength = 0.28;
+        $s1End = 0.34;
+        $s2End = 0.67;
+    }
+    // 4. Cimahi GP (Brigif 15) - Compact Technical Autodrome
+    elseif (str_contains($location, 'cimahi') || str_contains($raceName, 'cimahi')) {
+        $circuitLayoutName = 'Brigif 15 Cimahi Autodrome (Compact Technical Layout)';
+        $circuitDesc = 'Compact autodrome featuring double-hairpin complexes, rapid switchbacks, and high downforce technical sectors.';
+        $circuitSvgPath = 'M 110 280 L 480 280 C 520 280 550 250 540 220 C 530 190 490 190 460 160 C 430 130 450 90 510 90 L 670 90 C 730 90 750 140 730 180 C 710 220 660 230 600 230 L 450 230 C 410 230 400 150 340 150 L 220 150 C 160 150 120 180 120 220 C 120 260 80 280 110 280 Z';
+        $drsStart = 0.02;
+        $drsLength = 0.22;
+        $s1End = 0.32;
+        $s2End = 0.68;
+    }
+    // 5. Bandung Hill Climb GP (Parahyangan) - Elevation Mountain Circuit
+    elseif (str_contains($location, 'bandung') || str_contains($raceName, 'bandung')) {
+        $circuitLayoutName = 'Bandung Hillside Mountain Circuit (Elevation Mountain Layout)';
+        $circuitDesc = 'High elevation mountain circuit through Parahyangan hills with steep staged hairpins, long parabolic curves, and valley descent straight.';
+        $circuitSvgPath = 'M 90 260 L 380 260 C 420 260 450 295 500 295 L 680 295 C 730 295 750 260 740 220 C 730 180 670 175 620 175 L 440 175 C 380 175 350 120 400 80 C 450 40 580 40 640 60 C 700 80 730 50 670 40 L 300 40 C 210 40 140 75 140 130 C 140 190 190 210 160 240 C 130 270 70 260 90 260 Z';
+        $drsStart = 0.03;
+        $drsLength = 0.22;
+        $s1End = 0.36;
+        $s2End = 0.72;
+    }
+    // Default Fallback
+    else {
+        $circuitLayoutName = 'Championship Grand Circuit (' . ucfirst($trackType) . ')';
+        $circuitDesc = 'Official FIA standard championship circuit layout with mixed technical and aerodynamic sectors.';
         $circuitSvgPath = 'M 110 270 L 620 270 C 675 270 735 235 735 185 C 735 135 685 105 630 105 L 485 105 C 445 105 425 65 385 65 C 345 65 335 115 295 115 L 215 115 C 175 115 155 75 115 75 C 65 75 55 135 55 185 C 55 245 75 270 110 270 Z';
         $drsStart = 0.04;
         $drsLength = 0.28;
