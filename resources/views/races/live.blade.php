@@ -282,21 +282,26 @@
             const finishOffset = (pos - 1) * (totalLength * 0.015);
             distance = Math.max(0, (totalLength * 0.985) - finishOffset);
         } else {
-            // Gap offset as fraction of a full lap (e.g. 15s gap / 75s = 0.20 of track behind Leader)
-            const gapOffset = gapSec / avgLapTime;
-
-            // Total cumulative progress in laps (e.g., Lap 1 at 20% = 0.20 laps)
-            const leaderTotalLaps = (Math.max(1, this.currentLap) - 1) + (this.subLapProgress || 0.0);
-            const carTotalLaps = leaderTotalLaps - gapOffset;
-
-            let trackFraction;
-            if (carTotalLaps <= 0) {
-                // Di Lap 1 saat mobil tertinggal di grid start, tahan di area garis start/grid (tidak boleh wrap ke depan P1)
-                const gridOffset = (pos - 1) * 0.003;
-                trackFraction = Math.max(0.001, 0.02 - gridOffset);
+            const fullGapOffset = gapSec / avgLapTime;
+            const currentLapNum = Math.max(1, this.currentLap);
+            const leaderProgress = this.subLapProgress || 0.0;
+            
+            // Pada Lap 1, seluruh mobil melaju bersama sejak awal; jarak antar-mobil merenggang bertahap
+            let effectiveGap;
+            if (currentLapNum === 1) {
+                const startPackingFactor = 0.08 + (leaderProgress * 0.92);
+                const gridSpacing = (pos - 1) * 0.004;
+                effectiveGap = (gridSpacing * (1.0 - leaderProgress)) + (fullGapOffset * startPackingFactor * leaderProgress);
             } else {
-                trackFraction = carTotalLaps % 1.0;
+                effectiveGap = fullGapOffset;
             }
+
+            // Hitung posisi lintasan; selalu berada di belakang pimpinan lomba tanpa wrap-around aneh
+            let trackFraction = (leaderProgress - effectiveGap);
+            while (trackFraction < 0) {
+                trackFraction += 1.0;
+            }
+            trackFraction = trackFraction % 1.0;
 
             if (isNaN(trackFraction) || trackFraction < 0) {
                 trackFraction = 0;
