@@ -282,26 +282,43 @@
             const finishOffset = (pos - 1) * (totalLength * 0.015);
             distance = Math.max(0, (totalLength * 0.985) - finishOffset);
         } else {
+            const avgLapTime = 75.0;
             const fullGapOffset = gapSec / avgLapTime;
             const currentLapNum = Math.max(1, this.currentLap);
             const leaderProgress = this.subLapProgress || 0.0;
-            
-            // Pada Lap 1, seluruh mobil melaju bersama sejak awal; jarak antar-mobil merenggang bertahap
-            let effectiveGap;
+
+            // Total lap kumulatif yang telah ditempuh Leader (misal Lap 2 progress 0.15 = 1.15 laps)
+            const leaderAbsLap = (currentLapNum - 1) + leaderProgress;
+
+            // Transisi kompresi grid pada Lap 1 agar seluruh mobil langsung meluncur bersamaan
+            let effectiveGap = fullGapOffset;
             if (currentLapNum === 1) {
                 const startPackingFactor = 0.08 + (leaderProgress * 0.92);
                 const gridSpacing = (pos - 1) * 0.004;
                 effectiveGap = (gridSpacing * (1.0 - leaderProgress)) + (fullGapOffset * startPackingFactor * leaderProgress);
-            } else {
-                effectiveGap = fullGapOffset;
             }
 
-            // Hitung posisi lintasan; selalu berada di belakang pimpinan lomba tanpa wrap-around aneh
-            let trackFraction = (leaderProgress - effectiveGap);
-            while (trackFraction < 0) {
-                trackFraction += 1.0;
+            // Progres absolut mobil yang tertinggal
+            const carAbsLap = leaderAbsLap - effectiveGap;
+
+            let trackFraction;
+            if (carAbsLap <= 0) {
+                // Di Lap 1 saat mobil masih merintis dari grid, tahan berurutan di area garis start
+                const startOffset = (pos - 1) * 0.0025;
+                trackFraction = Math.max(0.001, 0.015 - startOffset);
+            } else {
+                trackFraction = ((carAbsLap % 1.0) + 1.0) % 1.0;
             }
-            trackFraction = trackFraction % 1.0;
+
+            // ATURAN INTEGRITAS POSISI DI SIRKUIT:
+            // Pada lap-lap awal sebelum overlap realistis terjadi (lap < 4),
+            // atau jika putaran absolut mobil belum mengimbangi lap Leader,
+            // mobil yang posisinya di belakang P1 (pos > 1) dilarang berada di depan Leader pada sirkuit.
+            if (pos > 1 && currentLapNum < 4 && trackFraction > leaderProgress) {
+                // Tahan mobil di belakang P1 secara proporsional sesuai nomor posisi
+                const trailOffset = (pos - 1) * 0.012;
+                trackFraction = Math.max(0.001, leaderProgress - trailOffset);
+            }
 
             if (isNaN(trackFraction) || trackFraction < 0) {
                 trackFraction = 0;
