@@ -490,6 +490,14 @@
                         <feGaussianBlur stdDeviation="3" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
+
+                    @if($race->weather === 'wet')
+                        <!-- Ambient Slanted Rain Streaks Pattern -->
+                        <pattern id="rainPattern" width="32" height="32" patternUnits="userSpaceOnUse" patternTransform="rotate(-25)">
+                            <line x1="4" y1="2" x2="4" y2="20" stroke="#38bdf8" stroke-width="1.4" stroke-linecap="round" opacity="0.5" />
+                            <line x1="20" y1="12" x2="20" y2="28" stroke="#7dd3fc" stroke-width="1.1" stroke-linecap="round" opacity="0.38" />
+                        </pattern>
+                    @endif
                 </defs>
 
                 <!-- 1. Track Base Surface (Dark Asphalt) -->
@@ -558,15 +566,12 @@
                       :stroke-dashoffset="-(trackLength * {{ $drsStart }})"
                       class="animate-pulse" />
 
-                <!-- 6. Single Master Reference Path for Alpine.js coordinate calculation (Debug Red Stroke) -->
+                <!-- 6. Single Master Reference Path for Alpine.js coordinate calculation -->
                 <path id="race-circuit-master-path"
                       d="{{ $circuitSvgPath }}"
                       fill="none"
-                      stroke="#ef4444"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      opacity="0.85" />
+                      stroke="transparent"
+                      stroke-width="1" />
 
                 <!-- 7. Start / Finish Line Banner -->
                 <g transform="translate(120, 280)">
@@ -574,14 +579,9 @@
                     <text x="6" y="26" fill="#a1a1aa" font-size="9" font-family="monospace" font-weight="bold">START / FINISH 🏁</text>
                 </g>
 
-                <!-- Wet Weather Rain Ripple Visuals (if wet) -->
+                <!-- Wet Weather Ambient Rain Overlay (if wet) -->
                 @if($race->weather === 'wet')
-                    <g opacity="0.35" class="pointer-events-none">
-                        <circle cx="240" cy="180" r="16" fill="none" stroke="#38bdf8" stroke-width="1.5" class="animate-ping" style="animation-duration: 3s;" />
-                        <circle cx="560" cy="240" r="22" fill="none" stroke="#60a5fa" stroke-width="1.5" class="animate-ping" style="animation-duration: 2.5s; animation-delay: 0.8s;" />
-                        <circle cx="390" cy="85" r="14" fill="none" stroke="#38bdf8" stroke-width="1" class="animate-ping" style="animation-duration: 2.8s; animation-delay: 1.4s;" />
-                        <circle cx="670" cy="140" r="18" fill="none" stroke="#60a5fa" stroke-width="1.5" class="animate-ping" style="animation-duration: 3.2s; animation-delay: 0.4s;" />
-                    </g>
+                    <rect width="800" height="350" fill="url(#rainPattern)" class="pointer-events-none" opacity="0.75" />
                 @endif
 
                 <!-- 8. GPS Car Markers (20 Cars Native SVG Elements with Physics Spread & Lateral Racing Line) -->
