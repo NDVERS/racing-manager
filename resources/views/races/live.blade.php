@@ -89,7 +89,7 @@
     if (str_contains($location, 'sentul') || str_contains($raceName, 'sentul')) {
         $circuitLayoutName = 'Sentul International Circuit (Permanent High-Speed Layout)';
         $circuitDesc = 'Classic permanent high-speed circuit with twin parallel straights, heavy braking Turn 1, and wide aerodynamic sweepers.';
-        $circuitSvgPath = 'M 100 280 L 680 280 C 730 280 750 250 750 210 C 750 170 710 150 660 150 L 320 150 C 280 150 260 100 220 90 C 180 80 140 80 110 110 C 70 150 60 210 60 250 C 60 280 80 280 100 280 Z';
+        $circuitSvgPath = 'M 120 280 L 660 280 C 730 280 750 240 750 185 C 750 130 730 90 660 90 L 460 90 C 400 90 360 140 310 140 L 220 140 C 140 140 70 180 70 230 C 70 270 90 280 120 280 Z';
         $drsStart = 0.03;
         $drsLength = 0.32;
         $s1End = 0.35;
@@ -187,17 +187,22 @@
             return;
         }
 
+        const fps = 24;
+        const interval = 1000 / fps;
         let lastTime = performance.now();
         let lapAccumulator = this.subLapProgress || 0.0;
 
         const animate = (currentTime) => {
             if (this.isFinished) return;
 
-            const deltaMs = currentTime - lastTime;
-            lastTime = currentTime;
+            this.timer = requestAnimationFrame(animate);
+
+            const delta = currentTime - lastTime;
+            if (delta < interval) return;
+            lastTime = currentTime - (delta % interval);
 
             const lapDurationMs = 1200 / this.playbackSpeed; // ms per lap
-            lapAccumulator += deltaMs / lapDurationMs;
+            lapAccumulator += delta / lapDurationMs;
 
             while (lapAccumulator >= 1.0 && this.currentLap < this.totalLaps) {
                 lapAccumulator -= 1.0;
@@ -213,11 +218,14 @@
             if (this.currentLap >= this.totalLaps) {
                 this.isFinished = true;
                 this.subLapProgress = 1.0;
+                if (this.timer) {
+                    cancelAnimationFrame(this.timer);
+                    this.timer = null;
+                }
                 return;
             }
 
             this.subLapProgress = lapAccumulator;
-            this.timer = requestAnimationFrame(animate);
         };
 
         this.timer = requestAnimationFrame(animate);
@@ -240,7 +248,7 @@
     },
 
     getCarCoordinates(carIndex, car) {
-        const defaultPos = { x: 100, y: 270 };
+        const defaultPos = { x: 120, y: 280 };
         const path = document.getElementById('race-circuit-master-path');
         if (!path || typeof path.getTotalLength !== 'function') {
             return defaultPos;
@@ -545,15 +553,18 @@
                       :stroke-dashoffset="-(trackLength * {{ $drsStart }})"
                       class="animate-pulse" />
 
-                <!-- 6. Single Master Reference Path for Alpine.js coordinate calculation -->
+                <!-- 6. Single Master Reference Path for Alpine.js coordinate calculation (Debug Red Stroke) -->
                 <path id="race-circuit-master-path"
                       d="{{ $circuitSvgPath }}"
                       fill="none"
-                      stroke="transparent"
-                      stroke-width="1" />
+                      stroke="#ef4444"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      opacity="0.85" />
 
                 <!-- 7. Start / Finish Line Banner -->
-                <g transform="translate(100, 270)">
+                <g transform="translate(120, 280)">
                     <line x1="0" y1="-14" x2="0" y2="14" stroke="#ffffff" stroke-width="3" stroke-dasharray="3,3" />
                     <text x="6" y="26" fill="#a1a1aa" font-size="9" font-family="monospace" font-weight="bold">START / FINISH 🏁</text>
                 </g>
@@ -572,7 +583,7 @@
                 <g id="car-markers">
                     @foreach($towerStandings as $idx => $driver)
                         <g :transform="'translate(' + getCarCoordinates({{ $idx }}, {{ Js::from($driver) }}).x + ',' + getCarCoordinates({{ $idx }}, {{ Js::from($driver) }}).y + ')'"
-                           class="cursor-pointer transition-transform duration-100 ease-linear"
+                           class="cursor-pointer"
                            @click="selectedDriver = {{ Js::from($driver) }}">
                             @if($driver['is_player'] && $driver['slot'] === 1)
                                 <!-- Car #1 (Player) -->
