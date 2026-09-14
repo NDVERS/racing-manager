@@ -193,31 +193,38 @@
             return defaultPos;
         }
 
-        const pos = (car && car.position) ? car.position : (carIndex + 1);
-        const avgLapTime = 75.0; // Benchmark seconds for 1 full lap
+        const pos = (car && typeof car.position === 'number') ? car.position : (carIndex + 1);
+        const avgLapTime = 75.0; // Standard reference lap time in seconds
         let distance;
 
         if (this.isFinished) {
-            // Ordered finish across the line
-            distance = (totalLength * 0.985) - ((pos - 1) * (totalLength * 0.016));
+            // Stack cars cleanly across finish line in finishing order
+            const finishOffset = (pos - 1) * (totalLength * 0.015);
+            distance = Math.max(0, (totalLength * 0.985) - finishOffset);
         } else {
-            // Gap in seconds relative to Leader
+            // Gap in seconds relative to Leader (P1 has gap = 0s)
             let gapSec = 0;
             if (car && typeof car.gap_seconds === 'number') {
-                gapSec = car.gap_seconds;
+                gapSec = Math.max(0, car.gap_seconds);
             } else if (car && car.gap && car.gap !== 'LEADER') {
                 const parsed = parseFloat(String(car.gap).replace(/[^0-9.]/g, ''));
-                gapSec = !isNaN(parsed) ? parsed : (pos - 1) * 1.8;
+                gapSec = !isNaN(parsed) ? Math.max(0, parsed) : (pos - 1) * 1.8;
             } else {
                 gapSec = (pos - 1) * 1.8;
             }
 
-            // Realistic circuit spread: gap / avgLapTime
+            // Gap offset as fraction of a lap (e.g. 15s gap / 75s = 0.20 behind Leader)
             const gapOffset = gapSec / avgLapTime;
-            const leaderProgress = (this.currentLap * 0.95);
+            
+            // Leader moves FORWARD around the circuit with each lap:
+            const leaderProgress = (this.currentLap * 0.35) + 0.15;
 
-            // Normalized fractional track position [0.0, 1.0)
-            let trackFraction = ((leaderProgress - gapOffset) % 1.0 + 1.0) % 1.0;
+            // Position of trailing car MUST BE BEHIND the Leader (subtracted):
+            let diff = leaderProgress - gapOffset;
+            let trackFraction = ((diff % 1.0) + 1.0) % 1.0;
+            if (isNaN(trackFraction) || trackFraction < 0) {
+                trackFraction = 0;
+            }
             distance = trackFraction * totalLength;
         }
 
@@ -229,7 +236,7 @@
                 return defaultPos;
             }
 
-            // Perpendicular lateral offset to prevent train clustering and show side-by-side battling
+            // Perpendicular lateral offset (inside/outside line)
             const step = 2.0;
             const nextDist = (distance + step <= totalLength) ? distance + step : distance - step;
             const ptNext = path.getPointAtLength(nextDist);
@@ -246,7 +253,7 @@
                 const nx = -dy / len;
                 const ny = dx / len;
 
-                // Alternate racing line inside/outside: even +3.5px, odd -3.5px
+                // Stagger lateral line: even +3.5px, odd -3.5px
                 let lateralShift = (carIndex % 2 === 0 ? 3.5 : -3.5);
                 if (this.isFinished) {
                     lateralShift = (pos % 2 === 0 ? 3.5 : -3.5);
@@ -254,10 +261,13 @@
 
                 const finalX = pt.x + (nx * lateralShift);
                 const finalY = pt.y + (ny * lateralShift);
-                return {
-                    x: Math.round(finalX * 10) / 10,
-                    y: Math.round(finalY * 10) / 10
-                };
+
+                if (!isNaN(finalX) && !isNaN(finalY)) {
+                    return {
+                        x: Math.round(finalX * 10) / 10,
+                        y: Math.round(finalY * 10) / 10
+                    };
+                }
             }
 
             return { x: Math.round(pt.x * 10) / 10, y: Math.round(pt.y * 10) / 10 };
