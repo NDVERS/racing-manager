@@ -3,15 +3,130 @@
 @section('title', 'Live Pit-Wall Telemetry - ' . $race->name)
 
 @section('content')
+@php
+    $pCompound = $simulation['tactics']['tire_compound'] ?? ($simulation['tire_compound'] ?? 'medium');
+    $pMode = $simulation['tactics']['driving_mode'] ?? ($simulation['driving_mode'] ?? 'balanced');
+    $pRes1 = $simulation['player_result_1'] ?? ($simulation['player_result'] ?? ['position' => 10, 'driver_name' => 'Driver 1', 'car_name' => 'Car 1', 'total_time' => '--', 'gap' => 'LEADER']);
+    $pRes2 = $simulation['player_result_2'] ?? null;
+    $isTwoCar = !empty($simulation['is_two_car']) && $pRes2 !== null;
+    $pos1 = $pRes1['position'] ?? 10;
+    $pos2 = $pRes2['position'] ?? null;
+
+    // Pre-process Timing Tower Standings, Micro-Sectors, Intervals, and FL
+    $towerStandings = [];
+    $prevTotalSeconds = null;
+    $fastestLapOverallTime = $simulation['fastest_lap_overall']['time'] ?? null;
+    $fastestDriverName = $simulation['fastest_lap_overall']['driver'] ?? null;
+
+    // Find lowest sector bounds for purple honors
+    $minS1 = 999.0;
+    $minS2 = 999.0;
+    $minS3 = 999.0;
+
+    foreach ($simulation['standings'] as $idx => $driver) {
+        $flSec = $driver['fastest_lap_seconds'] ?? (74.0 + $idx * 0.12);
+        $s1Val = round($flSec * 0.315 + (($idx % 4) * 0.05), 3);
+        $s2Val = round($flSec * 0.410 + (($idx % 3) * 0.06), 3);
+        $s3Val = round($flSec * 0.275 + (($idx % 5) * 0.04), 3);
+
+        if ($s1Val < $minS1) { $minS1 = $s1Val; }
+        if ($s2Val < $minS2) { $minS2 = $s2Val; }
+        if ($s3Val < $minS3) { $minS3 = $s3Val; }
+    }
+
+    foreach ($simulation['standings'] as $idx => $driver) {
+        $currSeconds = $driver['total_seconds'] ?? (1000 + $idx * 1.4);
+        if ($idx === 0) {
+            $intervalText = 'LEADER';
+            $intervalSec = 0.0;
+        } else {
+            $intervalSec = max(0.045, $currSeconds - $prevTotalSeconds);
+            $intervalText = '+' . number_format($intervalSec, 3) . 's';
+        }
+        $prevTotalSeconds = $currSeconds;
+
+        $flSec = $driver['fastest_lap_seconds'] ?? (74.0 + $idx * 0.12);
+        $s1 = round($flSec * 0.315 + (($idx % 4) * 0.05), 3);
+        $s2 = round($flSec * 0.410 + (($idx % 3) * 0.06), 3);
+        $s3 = round($flSec * 0.275 + (($idx % 5) * 0.04), 3);
+
+        // Position Delta Calculation
+        $startGridPos = (($idx * 3 + 7) % count($simulation['standings'])) + 1;
+        $gainLoss = $startGridPos - ($idx + 1); // positive = gained positions
+
+        $isPlayer = !empty($driver['is_player']);
+        $slot = $driver['car_slot'] ?? ($isPlayer ? ($driver['driver_name'] === ($pRes2['driver_name'] ?? '') ? 2 : 1) : 1);
+        $isOverallFastest = ($driver['driver_name'] === $fastestDriverName || $driver['fastest_lap'] === $fastestLapOverallTime);
+
+        $towerStandings[] = array_merge($driver, [
+            'position' => $idx + 1,
+            'interval_text' => $intervalText,
+            'interval_sec' => $intervalSec,
+            'start_grid' => $startGridPos,
+            'gain_loss' => $gainLoss,
+            's1' => number_format($s1, 3),
+            's2' => number_format($s2, 3),
+            's3' => number_format($s3, 3),
+            'is_s1_fastest' => ($s1 <= $minS1 + 0.005),
+            'is_s2_fastest' => ($s2 <= $minS2 + 0.005),
+            'is_s3_fastest' => ($s3 <= $minS3 + 0.005),
+            'is_overall_fastest' => $isOverallFastest,
+            'is_player' => $isPlayer,
+            'slot' => $slot,
+        ]);
+    }
+
+    // Determine Circuit SVG Layout Path based on track type / location
+    $trackType = $race->track_type ?? 'balanced';
+    $location = strtolower($race->location ?? '');
+
+    if ($trackType === 'high_speed' || str_contains($location, 'sentul') || str_contains($location, 'jakarta')) {
+        $circuitLayoutName = 'High-Speed Aerodynamic Layout (Sentul / Jakarta)';
+        $circuitDesc = 'Long front straight with DRS activation zone, high-speed flowing sweeps & heavy braking Turn 1.';
+        $circuitSvgPath = 'M 90 270 L 680 270 C 735 270 755 235 755 190 C 755 145 715 125 660 125 L 340 125 C 290 125 275 85 245 65 C 215 45 170 45 135 65 C 80 100 55 160 55 210 C 55 250 70 270 90 270 Z';
+        $drsStart = 0.05;
+        $drsLength = 0.35;
+        $s1End = 0.33;
+        $s2End = 0.68;
+    } elseif ($trackType === 'technical' || str_contains($location, 'cimahi') || str_contains($location, 'bandung')) {
+        $circuitLayoutName = 'Technical Hairpin & Chicane Layout (Cimahi / Bandung)';
+        $circuitDesc = 'Tight apex chicanes, high downforce complex & multiple switchback hairpin sections.';
+        $circuitSvgPath = 'M 100 270 L 440 270 C 480 270 505 240 495 210 C 485 180 445 180 425 150 C 405 120 435 80 495 80 L 650 80 C 710 80 740 120 740 165 C 740 215 690 255 635 255 L 580 255 C 550 255 540 295 490 295 L 240 295 C 175 295 135 250 135 190 C 135 135 175 105 215 105 L 320 105 C 350 105 360 65 320 55 C 260 45 150 45 95 85 C 45 125 45 220 100 270 Z';
+        $drsStart = 0.02;
+        $drsLength = 0.20;
+        $s1End = 0.35;
+        $s2End = 0.70;
+    } else {
+        $circuitLayoutName = 'Balanced Coastal Flowing Circuit (Mandalika)';
+        $circuitDesc = 'Rhythmic medium-speed corners, coastal sweepers, flowing S-bends and high-traction DRS straight.';
+        $circuitSvgPath = 'M 110 270 L 620 270 C 675 270 735 235 735 185 C 735 135 685 105 630 105 L 485 105 C 445 105 425 65 385 65 C 345 65 335 115 295 115 L 215 115 C 175 115 155 75 115 75 C 65 75 55 135 55 185 C 55 245 75 270 110 270 Z';
+        $drsStart = 0.04;
+        $drsLength = 0.28;
+        $s1End = 0.34;
+        $s2End = 0.67;
+    }
+@endphp
+
 <div x-data="{
     playbackSpeed: 1,
     currentLap: 1,
     totalLaps: {{ max(1, (int)$race->laps) }},
     isFinished: false,
     timer: null,
+    selectedDriver: null,
+    trackLength: 0,
+    carPositions: [],
+    drivers: {{ Js::from($towerStandings) }},
+    lapEvents: {{ Js::from($simulation['lap_events']) }},
 
     init() {
-        this.startTicker();
+        this.$nextTick(() => {
+            if (this.$refs.circuitPath) {
+                this.trackLength = this.$refs.circuitPath.getTotalLength();
+                this.updateCarPositions();
+            }
+            this.startTicker();
+        });
     },
 
     setSpeed(speed) {
@@ -28,12 +143,14 @@
         }
         if (this.currentLap >= this.totalLaps) {
             this.isFinished = true;
+            this.updateCarPositions();
             return;
         }
         const intervalMs = Math.round(1000 / this.playbackSpeed);
         this.timer = setInterval(() => {
             if (this.currentLap < this.totalLaps) {
                 this.currentLap++;
+                this.updateCarPositions();
                 this.$nextTick(() => {
                     const feed = document.getElementById('telemetry-radio-feed');
                     if (feed) {
@@ -43,6 +160,7 @@
             }
             if (this.currentLap >= this.totalLaps) {
                 this.isFinished = true;
+                this.updateCarPositions();
                 clearInterval(this.timer);
                 this.timer = null;
             }
@@ -56,14 +174,68 @@
         }
         this.currentLap = this.totalLaps;
         this.isFinished = true;
+        this.updateCarPositions();
         this.$nextTick(() => {
             const feed = document.getElementById('telemetry-radio-feed');
             if (feed) {
                 feed.scrollTop = feed.scrollHeight;
             }
         });
+    },
+
+    updateCarPositions() {
+        if (!this.$refs.circuitPath) return;
+        if (!this.trackLength || this.trackLength <= 0) {
+            this.trackLength = this.$refs.circuitPath.getTotalLength();
+            if (!this.trackLength || this.trackLength <= 0) return;
+        }
+        const total = this.trackLength;
+        this.carPositions = this.drivers.map((driver) => {
+            let distance;
+            if (this.isFinished) {
+                distance = (total * 0.985) - ((driver.position - 1) * (total * 0.015));
+            } else {
+                const lapFactor = (this.currentLap * 0.94);
+                const posOffset = (driver.position - 1) * 0.034;
+                let loopFraction = (lapFactor - posOffset) % 1.0;
+                if (loopFraction < 0) {
+                    loopFraction += 1.0;
+                }
+                distance = loopFraction * total;
+            }
+            distance = Math.max(0, Math.min(total, distance));
+            const pt = this.$refs.circuitPath.getPointAtLength(distance);
+            return {
+                driver_name: driver.driver_name,
+                team_name: driver.team_name,
+                car_name: driver.car_name,
+                position: driver.position,
+                is_player: driver.is_player,
+                slot: driver.slot,
+                tire_compound: driver.tire_compound,
+                driving_mode: driver.driving_mode,
+                gap: driver.gap,
+                interval_text: driver.interval_text,
+                interval_sec: driver.interval_sec,
+                fastest_lap: driver.fastest_lap,
+                s1: driver.s1,
+                s2: driver.s2,
+                s3: driver.s3,
+                is_s1_fastest: driver.is_s1_fastest,
+                is_s2_fastest: driver.is_s2_fastest,
+                is_s3_fastest: driver.is_s3_fastest,
+                x: Math.round(pt.x * 10) / 10,
+                y: Math.round(pt.y * 10) / 10,
+            };
+        });
+    },
+
+    getDriverEvents(driverName) {
+        if (!driverName) return [];
+        return this.lapEvents.filter(e => e.message && (e.message.toLowerCase().includes(driverName.toLowerCase())));
     }
 }" class="space-y-6">
+
     <!-- Top Telemetry Header Bar -->
     <div class="bg-zinc-900 border border-zinc-800 rounded p-6 shadow-xl relative overflow-hidden">
         <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-orange-500 to-amber-400"></div>
@@ -89,16 +261,6 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                @php
-                    $pCompound = $simulation['tactics']['tire_compound'] ?? ($simulation['tire_compound'] ?? 'medium');
-                    $pMode = $simulation['tactics']['driving_mode'] ?? ($simulation['driving_mode'] ?? 'balanced');
-                    $pRes1 = $simulation['player_result_1'] ?? ($simulation['player_result'] ?? ['position' => 10, 'driver_name' => 'Driver 1', 'car_name' => 'Car 1', 'total_time' => '--', 'gap' => 'LEADER']);
-                    $pRes2 = $simulation['player_result_2'] ?? null;
-                    $isTwoCar = !empty($simulation['is_two_car']) && $pRes2 !== null;
-                    $pos1 = $pRes1['position'] ?? 10;
-                    $pos2 = $pRes2['position'] ?? null;
-                @endphp
-
                 <!-- Simulation Speed & Instant Skip Controls -->
                 <div class="flex items-center gap-1.5 bg-zinc-950/90 border border-zinc-800 rounded p-1.5 font-mono shadow-inner">
                     <span class="text-[10px] text-zinc-500 uppercase font-bold px-1.5 hidden sm:inline">Speed:</span>
@@ -181,15 +343,15 @@
         </div>
     </div>
 
-    <!-- Dynamic Mini-Track Sector Map & Live Gaps Visualizer -->
-    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 shadow-xl font-mono relative overflow-hidden">
+    <!-- Official SVG 2D Circuit Map Visualizer (20 Cars GPS Tracking) -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 shadow-2xl font-mono relative overflow-hidden">
         <!-- Top Status & Sector Telemetry Row -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-zinc-800">
             <div class="flex items-center gap-3">
                 <template x-if="!isFinished">
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 text-xs font-bold uppercase shadow-sm">
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                        <span>LIVE SECTOR TELEMETRY &bull; LAP <span x-text="currentLap"></span> / {{ $race->laps }}</span>
+                        <span>LIVE 2D CIRCUIT GPS &bull; LAP <span x-text="currentLap"></span> / {{ $race->laps }}</span>
                     </span>
                 </template>
                 <template x-if="isFinished">
@@ -199,7 +361,7 @@
                 </template>
 
                 <span class="text-xs text-zinc-400 hidden sm:inline">&bull;</span>
-                <span class="text-xs text-zinc-300 font-bold hidden sm:inline">{{ $race->name }} ({{ strtoupper(str_replace('_', ' ', $race->track_type)) }})</span>
+                <span class="text-xs text-zinc-300 font-bold hidden sm:inline">{{ $circuitLayoutName }}</span>
             </div>
 
             <!-- Active Sector & DRS Status Badges -->
@@ -224,63 +386,184 @@
             </div>
         </div>
 
-        <!-- Interactive Sector Track Map Display -->
-        <div class="space-y-2 py-1">
-            <!-- Sector Header Labels -->
-            <div class="grid grid-cols-4 text-[10px] uppercase font-bold text-zinc-500 px-1">
-                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span><span>SECTOR 1 (TURN 1-4)</span></div>
-                <div class="flex items-center gap-1 text-center justify-center"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span><span>SECTOR 2 (INFIELD)</span></div>
-                <div class="flex items-center gap-1 text-center justify-center"><span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span><span>SECTOR 3 (CHICANE)</span></div>
-                <div class="flex items-center gap-1 text-right justify-end"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>DRS FINISH LINE 🏁</span></div>
+        <!-- 2D SVG Circuit Map Canvas -->
+        <div class="relative w-full h-72 sm:h-80 md:h-96 bg-zinc-950/90 rounded-lg border border-zinc-800/90 overflow-hidden shadow-inner flex items-center justify-center p-2">
+            <!-- Background Circuit Grid -->
+            <div class="absolute inset-0 bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:24px_24px] opacity-25 pointer-events-none"></div>
+
+            <!-- Weather Indicator Watermark -->
+            <div class="absolute top-3 right-3 text-[10px] text-zinc-500 font-mono flex items-center gap-1.5 pointer-events-none z-0">
+                <span>SURFACE:</span>
+                <span class="font-bold text-zinc-300">{{ $race->weather === 'wet' ? '🌧️ WET RAIN' : '☀️ DRY ASPHALT' }}</span>
             </div>
 
-            <!-- Dynamic Track Rail with Car Position Markers -->
-            <div class="relative w-full h-10 bg-zinc-950 rounded-lg border border-zinc-800 flex items-center px-2 overflow-visible">
-                <!-- Sector Grid Divider Lines -->
-                <div class="absolute inset-0 grid grid-cols-4 pointer-events-none divide-x divide-zinc-800/80">
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                </div>
+            <!-- SVG Layout -->
+            <svg viewBox="0 0 800 350" class="w-full h-full relative z-10 select-none">
+                <defs>
+                    <!-- Wet Asphalt Filter -->
+                    <filter id="wetGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                </defs>
 
-                <!-- Track Background Progress Line -->
-                <div class="absolute left-2 right-2 h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-cyan-500 via-amber-400 to-emerald-400 rounded-full transition-all duration-300 ease-linear"
-                         :style="'width: ' + ((currentLap / totalLaps) * 100) + '%'"></div>
-                </div>
+                <!-- 1. Track Base Surface (Dark Asphalt) -->
+                <path d="{{ $circuitSvgPath }}"
+                      fill="none"
+                      stroke="#18181b"
+                      stroke-width="26"
+                      stroke-linecap="round"
+                      stroke-linejoin="round" />
+                
+                <path d="{{ $circuitSvgPath }}"
+                      fill="none"
+                      stroke="#27272a"
+                      stroke-width="20"
+                      stroke-linecap="round"
+                      stroke-linejoin="round" />
 
-                <!-- Competitor Visual Dots (Rivals in pack) -->
-                <div class="absolute transition-all duration-300 ease-out flex items-center"
-                     :style="'left: ' + (isFinished ? 98 : Math.max(4, Math.min(94, ((currentLap / totalLaps) * 100) + 1.5))) + '%'">
-                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 border border-white shadow-sm" title="P1 Leader"></span>
-                </div>
-                <div class="absolute transition-all duration-300 ease-out flex items-center"
-                     :style="'left: ' + (isFinished ? 95 : Math.max(3, Math.min(92, ((currentLap / totalLaps) * 100) - 2.5))) + '%'">
-                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-500 border border-zinc-400" title="Competitor"></span>
-                </div>
-                <div class="absolute transition-all duration-300 ease-out flex items-center"
-                     :style="'left: ' + (isFinished ? 92 : Math.max(2, Math.min(88, ((currentLap / totalLaps) * 100) - 5.0))) + '%'">
-                    <span class="w-2.5 h-2.5 rounded-full bg-zinc-600 border border-zinc-500" title="Competitor"></span>
-                </div>
+                <path d="{{ $circuitSvgPath }}"
+                      fill="none"
+                      stroke="#3f3f46"
+                      stroke-width="1.5"
+                      stroke-dasharray="6,8"
+                      opacity="0.5" />
 
-                <!-- Car #1 (YOU) Indicator Marker -->
-                <div class="absolute transition-all duration-300 ease-out z-20 -translate-x-1/2 flex flex-col items-center"
-                     :style="'left: ' + (isFinished ? 97 : Math.max(3, Math.min(96, ((currentLap / totalLaps) * 100) - ({{ $pos1 }} * 0.4)))) + '%'">
-                    <div class="px-1.5 py-0.5 rounded bg-cyan-500 text-black font-black text-[9px] shadow-lg shadow-cyan-500/50 flex items-center gap-0.5 border border-white">
-                        <span>C1</span>
-                    </div>
-                </div>
+                <!-- 2. Sector 1 Outline (Cyan) -->
+                <path d="{{ $circuitSvgPath }}"
+                      fill="none"
+                      stroke="#06b6d4"
+                      stroke-width="4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      :stroke-dasharray="(trackLength * {{ $s1End }}) + ' ' + trackLength"
+                      stroke-dashoffset="0"
+                      opacity="0.85" />
 
-                <!-- Car #2 (YOU) Indicator Marker (if 2-car entry) -->
-                @if($isTwoCar)
-                    <div class="absolute transition-all duration-300 ease-out z-10 -translate-x-1/2 flex flex-col items-center"
-                         :style="'left: ' + (isFinished ? 94 : Math.max(2, Math.min(94, ((currentLap / totalLaps) * 100) - ({{ $pos2 ?? 8 }} * 0.45)))) + '%'">
-                        <div class="px-1.5 py-0.5 rounded bg-blue-500 text-white font-black text-[9px] shadow-lg shadow-blue-500/50 flex items-center gap-0.5 border border-blue-200">
-                            <span>C2</span>
-                        </div>
-                    </div>
+                <!-- 3. Sector 2 Outline (Amber) -->
+                <path d="{{ $circuitSvgPath }}"
+                      fill="none"
+                      stroke="#f59e0b"
+                      stroke-width="4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      :stroke-dasharray="(trackLength * {{ $s2End - $s1End }}) + ' ' + trackLength"
+                      :stroke-dashoffset="-(trackLength * {{ $s1End }})"
+                      opacity="0.85" />
+
+                <!-- 4. Sector 3 Outline (Purple) -->
+                <path d="{{ $circuitSvgPath }}"
+                      fill="none"
+                      stroke="#a855f7"
+                      stroke-width="4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      :stroke-dasharray="(trackLength * {{ 1.0 - $s2End }}) + ' ' + trackLength"
+                      :stroke-dashoffset="-(trackLength * {{ $s2End }})"
+                      opacity="0.85" />
+
+                <!-- 5. DRS Activation Zone (Neon Green Glow) -->
+                <path d="{{ $circuitSvgPath }}"
+                      fill="none"
+                      stroke="#10b981"
+                      stroke-width="5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      :stroke-dasharray="(trackLength * {{ $drsLength }}) + ' ' + trackLength"
+                      :stroke-dashoffset="-(trackLength * {{ $drsStart }})"
+                      class="animate-pulse" />
+
+                <!-- 6. Hidden Reference Path for Alpine.js coordinate calculation -->
+                <path x-ref="circuitPath"
+                      d="{{ $circuitSvgPath }}"
+                      fill="none"
+                      stroke="transparent"
+                      stroke-width="0" />
+
+                <!-- 7. Start / Finish Line Banner -->
+                <g transform="translate(100, 270)">
+                    <line x1="0" y1="-14" x2="0" y2="14" stroke="#ffffff" stroke-width="3" stroke-dasharray="3,3" />
+                    <text x="6" y="26" fill="#a1a1aa" font-size="9" font-family="monospace" font-weight="bold">START / FINISH 🏁</text>
+                </g>
+
+                <!-- Wet Weather Rain Ripple Visuals (if wet) -->
+                @if($race->weather === 'wet')
+                    <g opacity="0.35" class="pointer-events-none">
+                        <circle cx="240" cy="180" r="16" fill="none" stroke="#38bdf8" stroke-width="1.5" class="animate-ping" style="animation-duration: 3s;" />
+                        <circle cx="560" cy="240" r="22" fill="none" stroke="#60a5fa" stroke-width="1.5" class="animate-ping" style="animation-duration: 2.5s; animation-delay: 0.8s;" />
+                        <circle cx="390" cy="85" r="14" fill="none" stroke="#38bdf8" stroke-width="1" class="animate-ping" style="animation-duration: 2.8s; animation-delay: 1.4s;" />
+                        <circle cx="670" cy="140" r="18" fill="none" stroke="#60a5fa" stroke-width="1.5" class="animate-ping" style="animation-duration: 3.2s; animation-delay: 0.4s;" />
+                    </g>
                 @endif
+
+                <!-- 8. GPS Car Markers (20 Cars Positioned Dynamically) -->
+                <template x-for="(car, idx) in carPositions" :key="car.driver_name">
+                    <g :transform="'translate(' + car.x + ',' + car.y + ')'"
+                       class="cursor-pointer transition-all duration-300 ease-out"
+                       @click="selectedDriver = car">
+                        <!-- Car #1 (Player) -->
+                        <template x-if="car.is_player && car.slot === 1">
+                            <g>
+                                <circle r="14" fill="#06b6d4" opacity="0.35" class="animate-ping" />
+                                <circle r="9" fill="#083344" stroke="#06b6d4" stroke-width="2.5" />
+                                <circle r="4.5" fill="#22d3ee" />
+                                <rect x="-11" y="-23" width="22" height="13" rx="3" fill="#06b6d4" stroke="#ffffff" stroke-width="1" />
+                                <text x="0" y="-14" fill="#000000" font-size="8.5" font-family="monospace" font-weight="900" text-anchor="middle">C1</text>
+                            </g>
+                        </template>
+
+                        <!-- Car #2 (Player) -->
+                        <template x-if="car.is_player && car.slot === 2">
+                            <g>
+                                <circle r="14" fill="#3b82f6" opacity="0.35" class="animate-ping" />
+                                <circle r="9" fill="#172554" stroke="#3b82f6" stroke-width="2.5" />
+                                <circle r="4.5" fill="#60a5fa" />
+                                <rect x="-11" y="-23" width="22" height="13" rx="3" fill="#3b82f6" stroke="#ffffff" stroke-width="1" />
+                                <text x="0" y="-14" fill="#ffffff" font-size="8.5" font-family="monospace" font-weight="900" text-anchor="middle">C2</text>
+                            </g>
+                        </template>
+
+                        <!-- P1 Leader (if AI) -->
+                        <template x-if="!car.is_player && car.position === 1">
+                            <g>
+                                <circle r="12" fill="#eab308" opacity="0.25" class="animate-pulse" />
+                                <circle r="8" fill="#422006" stroke="#eab308" stroke-width="2" />
+                                <circle r="4" fill="#fde047" />
+                                <rect x="-11" y="-21" width="22" height="12" rx="3" fill="#eab308" stroke="#000000" stroke-width="0.5" />
+                                <text x="0" y="-12" fill="#000000" font-size="8" font-family="monospace" font-weight="900" text-anchor="middle">P1</text>
+                            </g>
+                        </template>
+
+                        <!-- Other AI Competitors -->
+                        <template x-if="!car.is_player && car.position > 1">
+                            <g class="group">
+                                <circle r="5.5" fill="#27272a" stroke="#71717a" stroke-width="1.5" class="hover:stroke-amber-400 hover:fill-amber-950 transition-colors" />
+                                <circle r="2.5" fill="#a1a1aa" />
+                                <title x-text="'P' + car.position + ' ' + car.driver_name + ' (' + car.team_name + ')'"></title>
+                            </g>
+                        </template>
+                    </g>
+                </template>
+            </svg>
+        </div>
+
+        <!-- Sector Map Legend & Car Identifier Footer -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 pt-3 border-t border-zinc-800 text-[11px] text-zinc-400">
+            <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                <span>SECTOR 1 (SPEED TRAP)</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                <span>SECTOR 2 (INFIELD APEX)</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+                <span>SECTOR 3 (CHICANE)</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                <span>DRS SPEED ZONE ⚡</span>
             </div>
         </div>
 
@@ -381,72 +664,6 @@
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <!-- Left 2 Cols: Official F1 Pit-Wall Live Timing Tower (20 Cars) -->
         <div class="xl:col-span-2 space-y-6">
-            @php
-                // Pre-process Timing Tower Standings, Micro-Sectors, Intervals, and FL
-                $towerStandings = [];
-                $prevTotalSeconds = null;
-                $fastestLapOverallTime = $simulation['fastest_lap_overall']['time'] ?? null;
-                $fastestDriverName = $simulation['fastest_lap_overall']['driver'] ?? null;
-
-                // Find lowest sector bounds for purple honors
-                $minS1 = 999.0;
-                $minS2 = 999.0;
-                $minS3 = 999.0;
-
-                foreach ($simulation['standings'] as $idx => $driver) {
-                    $flSec = $driver['fastest_lap_seconds'] ?? (74.0 + $idx * 0.12);
-                    $s1Val = round($flSec * 0.315 + (($idx % 4) * 0.05), 3);
-                    $s2Val = round($flSec * 0.410 + (($idx % 3) * 0.06), 3);
-                    $s3Val = round($flSec * 0.275 + (($idx % 5) * 0.04), 3);
-
-                    if ($s1Val < $minS1) { $minS1 = $s1Val; }
-                    if ($s2Val < $minS2) { $minS2 = $s2Val; }
-                    if ($s3Val < $minS3) { $minS3 = $s3Val; }
-                }
-
-                foreach ($simulation['standings'] as $idx => $driver) {
-                    $currSeconds = $driver['total_seconds'] ?? (1000 + $idx * 1.4);
-                    if ($idx === 0) {
-                        $intervalText = 'LEADER';
-                        $intervalSec = 0.0;
-                    } else {
-                        $intervalSec = max(0.045, $currSeconds - $prevTotalSeconds);
-                        $intervalText = '+' . number_format($intervalSec, 3) . 's';
-                    }
-                    $prevTotalSeconds = $currSeconds;
-
-                    $flSec = $driver['fastest_lap_seconds'] ?? (74.0 + $idx * 0.12);
-                    $s1 = round($flSec * 0.315 + (($idx % 4) * 0.05), 3);
-                    $s2 = round($flSec * 0.410 + (($idx % 3) * 0.06), 3);
-                    $s3 = round($flSec * 0.275 + (($idx % 5) * 0.04), 3);
-
-                    // Position Delta Calculation
-                    $startGridPos = (($idx * 3 + 7) % count($simulation['standings'])) + 1;
-                    $gainLoss = $startGridPos - ($idx + 1); // positive = gained positions
-
-                    $isPlayer = !empty($driver['is_player']);
-                    $slot = $driver['car_slot'] ?? 1;
-                    $isOverallFastest = ($driver['driver_name'] === $fastestDriverName || $driver['fastest_lap'] === $fastestLapOverallTime);
-
-                    $towerStandings[] = array_merge($driver, [
-                        'position' => $idx + 1,
-                        'interval_text' => $intervalText,
-                        'interval_sec' => $intervalSec,
-                        'start_grid' => $startGridPos,
-                        'gain_loss' => $gainLoss,
-                        's1' => number_format($s1, 3),
-                        's2' => number_format($s2, 3),
-                        's3' => number_format($s3, 3),
-                        'is_s1_fastest' => ($s1 <= $minS1 + 0.005),
-                        'is_s2_fastest' => ($s2 <= $minS2 + 0.005),
-                        'is_s3_fastest' => ($s3 <= $minS3 + 0.005),
-                        'is_overall_fastest' => $isOverallFastest,
-                        'is_player' => $isPlayer,
-                        'slot' => $slot,
-                    ]);
-                }
-            @endphp
-
             <!-- Timing Tower Table Container -->
             <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 shadow-2xl relative font-mono overflow-hidden">
                 <!-- Pit-Wall HUD Header -->
@@ -461,7 +678,7 @@
                                 </span>
                             </h2>
                             <p class="text-[11px] text-zinc-400 mt-0.5">
-                                Grand Prix Final Classification &bull; Sector telemetry, interval delta & tire life &bull; 20 Cars Grid
+                                Grand Prix Final Classification &bull; Click any driver row to inspect live telemetry &bull; 20 Cars Grid
                             </p>
                         </div>
                     </div>
@@ -470,7 +687,7 @@
                             LAP <span class="text-amber-400 font-bold" x-text="currentLap"></span> / {{ $race->laps }}
                         </span>
                         <span class="text-[10px] text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-1 rounded font-bold">
-                            SYNC: 100%
+                            GPS SYNC: LIVE
                         </span>
                     </div>
                 </div>
@@ -494,7 +711,8 @@
                         </thead>
                         <tbody class="divide-y divide-zinc-800/50">
                             @foreach($towerStandings as $row)
-                                <tr class="transition-colors {{ $row['is_player'] ? ($row['slot'] === 1 ? 'bg-cyan-950/30 border-l-4 border-l-cyan-400' : 'bg-blue-950/30 border-l-4 border-l-blue-400') : 'hover:bg-zinc-800/30' }}">
+                                <tr @click="selectedDriver = {{ Js::from($row) }}"
+                                    class="transition-colors cursor-pointer {{ $row['is_player'] ? ($row['slot'] === 1 ? 'bg-cyan-950/30 hover:bg-cyan-950/50 border-l-4 border-l-cyan-400' : 'bg-blue-950/30 hover:bg-blue-950/50 border-l-4 border-l-blue-400') : 'hover:bg-zinc-800/50' }}">
                                     <!-- Pos -->
                                     <td class="py-2.5 px-2.5 text-center font-black">
                                         @if($row['position'] === 1)
@@ -519,7 +737,7 @@
                                         @endif
                                     </td>
 
-                                    <!-- Driver & Team Identity -->
+                                    <!-- Driver & Team Identity with Battle Alert Badge -->
                                     <td class="py-2.5 px-3">
                                         <div class="flex items-center gap-2">
                                             <div>
@@ -531,6 +749,11 @@
                                                         @else
                                                             <span class="text-[8px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-black tracking-wider">CAR #2 (YOU)</span>
                                                         @endif
+                                                    @endif
+                                                    @if($row['position'] > 1 && $row['interval_sec'] < 0.8)
+                                                        <span class="text-[8px] bg-rose-950/90 text-rose-300 border border-rose-500/60 px-1.5 py-0.5 rounded font-black tracking-wider animate-pulse shadow-sm shadow-rose-900/40" title="Wheel-to-Wheel Battle (< 0.8s)">
+                                                            ⚔️ BATTLE
+                                                        </span>
                                                     @endif
                                                 </div>
                                                 <div class="text-[10px] text-zinc-400 uppercase font-normal mt-0.5">
@@ -633,12 +856,13 @@
                 <!-- Timing Tower Legend / Footer -->
                 <div class="flex flex-wrap items-center justify-between text-[10px] text-zinc-500 pt-3 mt-3 border-t border-zinc-800/80 gap-2">
                     <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-500"></span><span>Overall Fastest Sector</span></div>
-                        <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Podium Pace</span></div>
-                        <div class="flex items-center gap-1"><span class="px-1 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/40 text-[8px] font-bold">DRS</span><span>Interval &lt; 1.000s</span></div>
+                        <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-500"></span><span>Fastest Sector</span></div>
+                        <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Personal/Podium Best</span></div>
+                        <div class="flex items-center gap-1"><span class="px-1 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-500/40 text-[8px] font-bold">⚔️ BATTLE</span><span>Gap &lt; 0.8s</span></div>
+                        <div class="flex items-center gap-1"><span class="px-1 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/40 text-[8px] font-bold">DRS</span><span>Interval &lt; 1.0s</span></div>
                     </div>
                     <div>
-                        <span>Timing Engine v2.4 &bull; Official FIA Paddock Telemetry</span>
+                        <span>Click row to open Telemetry Inspector &bull; FIA Timing Engine v2.5</span>
                     </div>
                 </div>
             </div>
@@ -707,6 +931,154 @@
             </div>
         </div>
     </div>
+
+    <!-- Driver Telemetry Inspection Drawer / Slide-Over Modal -->
+    <div x-show="selectedDriver"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-hidden font-mono"
+         aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div x-show="selectedDriver"
+             x-transition:enter="ease-in-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in-out duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="selectedDriver = null"
+             class="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"></div>
+
+        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div x-show="selectedDriver"
+                 x-transition:enter="transform transition ease-in-out duration-300"
+                 x-transition:enter-start="translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transform transition ease-in-out duration-300"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="translate-x-full"
+                 class="w-screen max-w-md bg-zinc-950 border-l border-zinc-800 shadow-2xl flex flex-col">
+                
+                <!-- Drawer Header -->
+                <div class="p-6 bg-zinc-900 border-b border-zinc-800 relative">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-lg flex items-center justify-center font-black text-xl border shadow-inner"
+                                 :class="selectedDriver?.is_player ? (selectedDriver?.slot === 1 ? 'bg-cyan-950 text-cyan-300 border-cyan-500/50' : 'bg-blue-950 text-blue-300 border-blue-500/50') : 'bg-zinc-900 text-amber-400 border-zinc-700'">
+                                <span x-text="'P' + selectedDriver?.position"></span>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-base font-black text-white uppercase tracking-tight" x-text="selectedDriver?.driver_name"></h3>
+                                    <template x-if="selectedDriver?.is_player">
+                                        <span class="text-[8px] px-1.5 py-0.5 rounded font-black uppercase"
+                                              :class="selectedDriver?.slot === 1 ? 'bg-cyan-500 text-black' : 'bg-blue-500 text-white'"
+                                              x-text="selectedDriver?.slot === 1 ? 'CAR #1 (YOU)' : 'CAR #2 (YOU)'"></span>
+                                    </template>
+                                </div>
+                                <p class="text-xs text-zinc-400 uppercase mt-0.5" x-text="selectedDriver?.team_name + ' • ' + selectedDriver?.car_name"></p>
+                            </div>
+                        </div>
+                        <button type="button" @click="selectedDriver = null" class="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800 transition cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Drawer Body -->
+                <div class="p-6 space-y-6 flex-1 overflow-y-auto">
+                    <!-- Telemetry Status Grid -->
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="bg-zinc-900 border border-zinc-800 rounded p-3">
+                            <span class="text-[9px] text-zinc-500 uppercase block font-bold">Gap to Leader</span>
+                            <span class="text-sm font-black text-white mt-1 block" x-text="selectedDriver?.gap"></span>
+                        </div>
+                        <div class="bg-zinc-900 border border-zinc-800 rounded p-3">
+                            <span class="text-[9px] text-zinc-500 uppercase block font-bold">Interval to Ahead</span>
+                            <div class="flex items-center gap-1.5 mt-1">
+                                <span class="text-sm font-black text-white" x-text="selectedDriver?.interval_text"></span>
+                                <template x-if="selectedDriver?.position > 1 && selectedDriver?.interval_sec < 0.8">
+                                    <span class="text-[8px] bg-rose-950 text-rose-300 border border-rose-500/50 px-1 py-0.5 rounded font-bold">⚔️ BATTLE</span>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="bg-zinc-900 border border-zinc-800 rounded p-3">
+                            <span class="text-[9px] text-zinc-500 uppercase block font-bold">Tire Compound & Age</span>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="w-2.5 h-2.5 rounded-full"
+                                      :class="{
+                                          'bg-red-500': selectedDriver?.tire_compound === 'soft',
+                                          'bg-amber-400': selectedDriver?.tire_compound === 'medium',
+                                          'bg-zinc-200': selectedDriver?.tire_compound === 'hard',
+                                          'bg-blue-500': selectedDriver?.tire_compound === 'wet'
+                                      }"></span>
+                                <span class="text-xs font-bold uppercase text-white" x-text="(selectedDriver?.tire_compound || 'medium') + ' (Lap ' + currentLap + ')'"></span>
+                            </div>
+                        </div>
+                        <div class="bg-zinc-900 border border-zinc-800 rounded p-3">
+                            <span class="text-[9px] text-zinc-500 uppercase block font-bold">ECU / Driving Mode</span>
+                            <span class="text-xs font-bold uppercase mt-1 block"
+                                  :class="selectedDriver?.driving_mode === 'push' ? 'text-red-400' : (selectedDriver?.driving_mode === 'conserve' ? 'text-emerald-400' : 'text-zinc-300')"
+                                  x-text="selectedDriver?.driving_mode ? (selectedDriver.driving_mode === 'push' ? '⚡ PUSH' : (selectedDriver.driving_mode === 'conserve' ? '🛡️ CONSERVE' : '⚙️ BALANCED')) : '⚙️ BALANCED'"></span>
+                        </div>
+                    </div>
+
+                    <!-- Micro-Sectors Breakdown -->
+                    <div class="bg-zinc-900 border border-zinc-800 rounded p-4">
+                        <h4 class="text-xs font-black uppercase text-zinc-300 mb-3 flex items-center justify-between">
+                            <span>Micro-Sector Telemetry</span>
+                            <span class="text-[9px] text-zinc-500 font-normal">SPEED SPLITS</span>
+                        </h4>
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div class="bg-zinc-950 border rounded p-2.5" :class="selectedDriver?.is_s1_fastest ? 'border-purple-500/50 bg-purple-950/40 text-purple-300' : 'border-zinc-800 text-zinc-300'">
+                                <span class="text-[8px] text-zinc-500 block uppercase font-bold">Sector 1</span>
+                                <span class="font-black text-sm" x-text="selectedDriver?.s1 + 's'"></span>
+                            </div>
+                            <div class="bg-zinc-950 border rounded p-2.5" :class="selectedDriver?.is_s2_fastest ? 'border-purple-500/50 bg-purple-950/40 text-purple-300' : 'border-zinc-800 text-zinc-300'">
+                                <span class="text-[8px] text-zinc-500 block uppercase font-bold">Sector 2</span>
+                                <span class="font-black text-sm" x-text="selectedDriver?.s2 + 's'"></span>
+                            </div>
+                            <div class="bg-zinc-950 border rounded p-2.5" :class="selectedDriver?.is_s3_fastest ? 'border-purple-500/50 bg-purple-950/40 text-purple-300' : 'border-zinc-800 text-zinc-300'">
+                                <span class="text-[8px] text-zinc-500 block uppercase font-bold">Sector 3</span>
+                                <span class="font-black text-sm" x-text="selectedDriver?.s3 + 's'"></span>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs">
+                            <span class="text-zinc-400">Personal Best Lap:</span>
+                            <span class="font-black text-amber-400" x-text="selectedDriver?.fastest_lap"></span>
+                        </div>
+                    </div>
+
+                    <!-- Driver Radio & Incident Log Filter -->
+                    <div class="bg-zinc-900 border border-zinc-800 rounded p-4">
+                        <h4 class="text-xs font-black uppercase text-zinc-300 mb-3 flex items-center justify-between">
+                            <span>Driver Radio & Log</span>
+                            <span class="text-[9px] text-zinc-500 font-normal">FILTERED FEED</span>
+                        </h4>
+                        <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                            <template x-for="(ev, eIdx) in getDriverEvents(selectedDriver?.driver_name)" :key="eIdx">
+                                <div class="p-2.5 rounded bg-zinc-950 border border-zinc-800 text-xs">
+                                    <div class="flex items-center justify-between text-[9px] font-bold text-zinc-500 mb-1">
+                                        <span x-text="'LAP ' + ev.lap"></span>
+                                        <span class="uppercase" x-text="ev.type"></span>
+                                    </div>
+                                    <p class="text-zinc-300 text-[11px]" x-text="ev.message"></p>
+                                </div>
+                            </template>
+                            <template x-if="getDriverEvents(selectedDriver?.driver_name).length === 0">
+                                <p class="text-xs text-zinc-500 italic text-center py-4">No specific incidents or radio transcripts recorded for this driver.</p>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drawer Footer -->
+                <div class="p-4 bg-zinc-900 border-t border-zinc-800">
+                    <button type="button" @click="selectedDriver = null" class="w-full py-2.5 rounded bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold uppercase transition cursor-pointer">
+                        Close Inspector
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
-
