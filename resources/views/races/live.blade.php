@@ -282,46 +282,35 @@
             const finishOffset = (pos - 1) * (totalLength * 0.015);
             distance = Math.max(0, (totalLength * 0.985) - finishOffset);
         } else {
-            const avgLapTime = 75.0;
-            const fullGapOffset = gapSec / avgLapTime;
             const currentLapNum = Math.max(1, this.currentLap);
             const leaderProgress = this.subLapProgress || 0.0;
 
-            // Visual gap diukur strictly ke belakang dari posisi P1 (Leader)
+            // Rentang sebaran maksimum mobil di kanvas dibatasi 55% panjang trek
+            // agar mobil paling belakang berada di seberang sirkuit dan mustahil mendekati hidung P1
+            const maxTrackSpread = 0.55;
+            
+            // Jarak visual stabil per posisi (P1 = 0, P2 = 0.025, ... P20 = ~0.50)
+            const basePosOffset = (pos - 1) * (maxTrackSpread / 19);
+
             let visualGap;
             if (pos === 1) {
                 visualGap = 0;
             } else if (currentLapNum === 1) {
-                // Lap 1: grid start berurutan rapat dan merenggang dinamis
-                const packRatio = Math.min(1.0, 0.15 + (leaderProgress * 0.85));
-                const maxSpread = Math.min(0.60, leaderProgress * 0.80);
-                const rawGap = (pos - 1) * (maxSpread / 20);
-                visualGap = Math.min(fullGapOffset * packRatio, rawGap);
+                // Di Lap 1: grid start berurutan rapat dari 0.05 s/d 0.35 seiring berjalannya lap
+                const lap1Expansion = 0.15 + (leaderProgress * 0.85);
+                visualGap = basePosOffset * lap1Expansion;
             } else {
-                // Lap 2+: sebaran mobil di sirkuit dibatasi maksimal 0.88 lap di belakang P1
-                // agar mobil terakhir tidak pernah melompat ke depan hidung P1
-                const maxAllowedGap = 0.88;
-                const naturalGap = Math.min(maxAllowedGap, fullGapOffset);
-                const minPosSpacing = (pos - 1) * 0.012;
-                visualGap = Math.min(maxAllowedGap, Math.max(naturalGap, minPosSpacing));
+                // Lap 2+: sebaran stabil proporsional berdasarkan selisih waktu nyata tanpa melebihi batas 0.55
+                const telemetryGapFraction = (gapSec / 75.0) * 0.5;
+                visualGap = Math.min(maxTrackSpread, Math.max(basePosOffset * 0.6, telemetryGapFraction));
             }
 
-            // Hitung posisi visual mundur dari Leader:
-            let trackFraction = leaderProgress - visualGap;
+            // Hitung posisi murni mundur dari Leader sepanjang jalur SVG
+            let trackFraction = (leaderProgress - visualGap);
             while (trackFraction < 0) {
                 trackFraction += 1.0;
             }
             trackFraction = trackFraction % 1.0;
-
-            // Strict Anti-Overtake Guard untuk P1:
-            // Selama balapan normal (pos > 1), mobil TIDAK BOLEH berada dalam jarak 5% di depan hidung P1
-            if (pos > 1) {
-                const forwardDist = (trackFraction - leaderProgress + 1.0) % 1.0;
-                // Jika mobil terdeteksi berada di rentang 0% - 12% tepat di depan P1, paksa mundur ke belakang P1
-                if (forwardDist > 0 && forwardDist < 0.12) {
-                    trackFraction = (leaderProgress - ((pos - 1) * 0.015) + 1.0) % 1.0;
-                }
-            }
 
             if (isNaN(trackFraction) || trackFraction < 0) {
                 trackFraction = 0;
