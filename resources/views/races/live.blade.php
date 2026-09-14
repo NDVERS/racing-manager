@@ -287,42 +287,39 @@
             const currentLapNum = Math.max(1, this.currentLap);
             const leaderProgress = this.subLapProgress || 0.0;
 
-            // Progres kumulatif absolut
-            const leaderAbsLap = (currentLapNum - 1) + leaderProgress;
-
-            // Pada Lap 1 & Lap 2, mobil tertahan dalam pack dinamis di belakang mobil depannya
-            let effectiveGap;
-            if (currentLapNum === 1) {
-                // Batasi jarak maksimal pack di Lap 1 agar mobil belakang tidak pernah melompat ke sektor depan
+            // Visual gap diukur strictly ke belakang dari posisi P1 (Leader)
+            let visualGap;
+            if (pos === 1) {
+                visualGap = 0;
+            } else if (currentLapNum === 1) {
+                // Lap 1: grid start berurutan rapat dan merenggang dinamis
                 const packRatio = Math.min(1.0, 0.15 + (leaderProgress * 0.85));
-                const maxSpread = Math.min(0.65, leaderProgress * 0.85);
+                const maxSpread = Math.min(0.60, leaderProgress * 0.80);
                 const rawGap = (pos - 1) * (maxSpread / 20);
-                effectiveGap = Math.min(fullGapOffset * packRatio, rawGap);
+                visualGap = Math.min(fullGapOffset * packRatio, rawGap);
             } else {
-                effectiveGap = fullGapOffset;
+                // Lap 2+: sebaran mobil di sirkuit dibatasi maksimal 0.88 lap di belakang P1
+                // agar mobil terakhir tidak pernah melompat ke depan hidung P1
+                const maxAllowedGap = 0.88;
+                const naturalGap = Math.min(maxAllowedGap, fullGapOffset);
+                const minPosSpacing = (pos - 1) * 0.012;
+                visualGap = Math.min(maxAllowedGap, Math.max(naturalGap, minPosSpacing));
             }
 
-            let carAbsLap = leaderAbsLap - effectiveGap;
-
-            // Pada Lap 1, mobil yang belum start tidak boleh bernilai negatif atau wrap
-            if (currentLapNum === 1 && carAbsLap < 0) {
-                const gridSpacing = (pos - 1) * 0.002;
-                carAbsLap = Math.max(0.001, 0.015 - gridSpacing);
+            // Hitung posisi visual mundur dari Leader:
+            let trackFraction = leaderProgress - visualGap;
+            while (trackFraction < 0) {
+                trackFraction += 1.0;
             }
+            trackFraction = trackFraction % 1.0;
 
-            let trackFraction = ((carAbsLap % 1.0) + 1.0) % 1.0;
-
-            // Strict Ordering Guard: Di Lap 1 & Lap 2, mobil di belakang P1 (pos > 1) 
-            // harus selalu berada di belakang P1 sepanjang lintasan
-            if (currentLapNum <= 2 && pos > 1) {
-                const minTrailingGap = (pos - 1) * 0.015;
-                if (leaderProgress >= minTrailingGap) {
-                    // P1 sudah cukup jauh, mobil mengikuti di belakang P1
-                    trackFraction = Math.max(0.001, Math.min(trackFraction, leaderProgress - minTrailingGap));
-                } else {
-                    // P1 masih di awal lap, mobil tertahan di akhir lap sebelumnya beriringan
-                    const wrapAnchor = 1.0 + leaderProgress - minTrailingGap;
-                    trackFraction = wrapAnchor % 1.0;
+            // Strict Anti-Overtake Guard untuk P1:
+            // Selama balapan normal (pos > 1), mobil TIDAK BOLEH berada dalam jarak 5% di depan hidung P1
+            if (pos > 1) {
+                const forwardDist = (trackFraction - leaderProgress + 1.0) % 1.0;
+                // Jika mobil terdeteksi berada di rentang 0% - 12% tepat di depan P1, paksa mundur ke belakang P1
+                if (forwardDist > 0 && forwardDist < 0.12) {
+                    trackFraction = (leaderProgress - ((pos - 1) * 0.015) + 1.0) % 1.0;
                 }
             }
 
